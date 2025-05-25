@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>用户故事原型 - 大模型与考试分析</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md">
+        <h1 class="text-2xl font-bold text-center mb-4">用户故事</h1>
+
+        <div class="flex flex-col items-center space-y-2">
+            <img src="https://cdn-icons-png.flaticon.com/512/194/194931.png" alt="教师头像" class="w-16 h-16 rounded-full">
+            <h2 class="text-lg font-semibold">教师</h2>
+        </div>
+
+        <div class="mt-6 space-y-4">
+            <button class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M9 19V6h13M9 6l3-3m0 0l3 3m-3-3v16" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        大模型生成试题
+      </button>
+
+            <button class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M11 11V5a1 1 0 112 0v6h6a1 1 0 010 2h-6v6a1 1 0 11-2 0v-6H5a1 1 0 110-2h6z" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        查看考试数据分析
+      </button>
+        </div>
+
+        <div class="mt-6 px-4 py-2 bg-gray-100 rounded-lg text-sm text-gray-700">
+            <p><strong>目标：</strong> 系统能利用大模型自动生成试题，并提供考试数据分析（如正确率、难度分布），帮助教师提升教学效率。</p>
+        </div>
+    </div>
+</body>
+
+</html>

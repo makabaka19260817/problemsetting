@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>用户登录与注册</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        function toggleForm(showLogin) {
+            document.getElementById('login-form').classList.toggle('hidden', !showLogin);
+            document.getElementById('register-form').classList.toggle('hidden', showLogin);
+            document.getElementById('login-tab').classList.toggle('border-b-2', showLogin);
+            document.getElementById('register-tab').classList.toggle('border-b-2', !showLogin);
+        }
+    </script>
+</head>
+
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-md p-6">
+        <div class="flex justify-center mb-6 space-x-8 text-lg font-semibold text-gray-700">
+            <button type="button" id="login-tab" onclick="toggleForm(true)" class="border-b-2 border-blue-600 pb-2">登录</button>
+            <button type="button" id="register-tab" onclick="toggleForm(false)" class="pb-2 hover:text-blue-600">注册</button>
+        </div>
+
+        <!-- 登录表单 -->
+        <form id="login-form" class="space-y-4" action="/login" method="post">
+            <input name="username" type="text" placeholder="用户名或邮箱" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input name="password" type="password" placeholder="密码" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">登录</button>
+            <p class="text-sm text-gray-500 text-center">忘记密码？</p>
+        </form>
+
+        <!-- 注册表单 -->
+        <form id="register-form" class="space-y-4 hidden" action="/register" method="post">
+            <input name="username" type="text" placeholder="用户名" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" />
+            <input name="email" type="email" placeholder="邮箱" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" />
+            <input name="password" type="password" placeholder="设置密码" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" />
+            <input name="confirm_password" type="password" placeholder="确认密码" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" />
+            <button type="submit" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">注册</button>
+        </form>
+    </div>
+
+    <script>
+        // 客户端简单密码一致性校验
+        document.getElementById('register-form').addEventListener('submit', e => {
+            const pwd = e.target.password.value;
+            const confirm = e.target.confirm_password.value;
+            if (pwd !== confirm) {
+                e.preventDefault();
+                alert('两次密码不一致');
+            }
+        });
+    </script>
+</body>
+
+</html>

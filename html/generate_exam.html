@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>用户故事原型 - 教师组卷</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md">
+        <h1 class="text-2xl font-bold text-center mb-4">用户故事</h1>
+
+        <div class="flex flex-col items-center space-y-2">
+            <img src="https://cdn-icons-png.flaticon.com/512/194/194931.png" alt="教师头像" class="w-16 h-16 rounded-full">
+            <h2 class="text-lg font-semibold">教师</h2>
+        </div>
+
+        <div class="mt-6 space-y-4">
+            <button class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        自动生成试卷
+      </button>
+
+            <button class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg shadow hover:bg-yellow-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M9 12l2 2 4-4M7 12a5 5 0 0110 0 5 5 0 01-10 0z" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        检查重复题目
+      </button>
+
+            <button class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 10h16M4 14h16M4 18h16" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        检查试卷结构
+      </button>
+        </div>
+
+        <p class="text-sm text-gray-700 mt-6">
+            作为教师，我希望能够选择题目自动生成试卷，并检查重复题目，确保试卷结构合理。
+        </p>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,38 @@
+<!-- admin_access_control.html -->
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>管理员权限控制</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md">
+        <h1 class="text-2xl font-bold text-center mb-4">用户故事 - 管理员</h1>
+        <div class="flex justify-around mb-4">
+            <div class="text-center">
+                <p class="font-semibold">教师</p>
+                <p class="text-sm text-gray-500">题库管理、组卷</p>
+            </div>
+            <div class="text-center">
+                <p class="font-semibold">学生</p>
+                <p class="text-sm text-gray-500">在线答题</p>
+            </div>
+            <div class="text-center">
+                <p class="font-semibold">管理员</p>
+                <p class="text-sm text-gray-500">权限配置</p>
+            </div>
+        </div>
+        <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+      配置角色权限
+    </button>
+        <p class="text-sm text-gray-600 mt-4">
+            作为管理员，我希望不同角色的用户（教师、管理员、学生）只能访问和操作权限范围内的功能。
+        </p>
+    </div>
+</body>
+
+</html>
