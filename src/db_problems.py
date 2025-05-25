@@ -3,7 +3,7 @@ import os
 from flask import jsonify
 import math
 
-DB_PATH = 'questions.db'
+DB_PATH = 'questions_papers.db'
 
 def get_db_connection():
     # 如果数据库文件不存在，则初始化
