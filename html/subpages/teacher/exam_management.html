@@ -2,12 +2,12 @@
 <html lang="zh">
 
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>考试管理</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="p-10 bg-white">
+<body class="p-4">
     <!-- 🔝 顶部导航 -->
     <div class="flex justify-between items-center mb-6">
         <div class="space-x-4">
@@ -18,7 +18,104 @@
         </form>
     </div>
     <h1 class="text-2xl font-bold mb-4">考试管理</h1>
-    <p class="text-gray-700">查看和管理所有已创建的考试。</p>
+
+    <table class="min-w-full border">
+        <thead>
+            <tr class="bg-gray-100">
+                <th class="border px-4 py-2">试卷标题</th>
+                <th class="border px-4 py-2">题目数量</th>
+                <th class="border px-4 py-2">操作</th>
+            </tr>
+        </thead>
+        <tbody id="exam-list"></tbody>
+    </table>
+
+    <!-- 弹窗 -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white p-4 rounded w-1/2 max-h-[80vh] overflow-y-auto">
+            <h2 class="text-xl font-bold mb-2">试卷题目列表</h2>
+            <ul id="modal-content" class="space-y-2"></ul>
+            <button onclick="closeModal()" class="mt-4 bg-gray-600 text-white px-4 py-2 rounded">关闭</button>
+        </div>
+    </div>
+
+    <script>
+        async function loadExams() {
+            const res = await fetch('/teacher/paper/all');
+            const data = await res.json();
+            const papers = data.papers || [];
+            const tbody = document.getElementById('exam-list');
+            tbody.innerHTML = '';
+            for (const paper of papers) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+        <td class="border px-4 py-2">${paper.title}</td>
+        <td class="border px-4 py-2">${paper.question_count}</td>
+        <td class="border px-4 py-2">
+          <button onclick='viewPaper(${JSON.stringify(paper.question_ids)})' class="text-blue-600 hover:underline">查看</button>
+          <button onclick='deletePaper("${paper.title}")' class="text-red-600 hover:underline ml-4">删除</button>
+        </td>
+      `;
+                tbody.appendChild(tr);
+            }
+        }
+
+        async function deletePaper(title) {
+            if (!confirm('确定要删除该试卷吗？')) return;
+            const res = await fetch('/teacher/paper/delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title
+                })
+            });
+            const result = await res.json();
+            alert(result.success ? '删除成功' : '删除失败');
+            if (result.success) loadExams();
+        }
+
+        async function viewPaper(questionIds) {
+            const res = await fetch('/teacher/paper/questions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    question_ids: questionIds
+                })
+            });
+            const data = await res.json();
+            if (!data.success) {
+                alert('获取题目失败: ' + (data.error || '未知错误'));
+                return;
+            }
+            const questions = data.questions || [];
+            const list = document.getElementById('modal-content');
+            list.innerHTML = '';
+            for (const q of questions) {
+                const li = document.createElement('li');
+                li.className = 'border rounded p-2';
+                li.innerHTML = `
+        <strong>类型:</strong> ${q.qtype} <br />
+        <strong>内容:</strong> ${q.content} <br />
+        <strong>难度:</strong> ${q.difficulty}
+      `;
+                list.appendChild(li);
+            }
+            const modal = document.getElementById('modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+            document.getElementById('modal').classList.remove('flex');
+        }
+
+        window.onload = loadExams;
+    </script>
 </body>
 
 </html>

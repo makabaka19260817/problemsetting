@@ -113,3 +113,64 @@ def save_paper(title, question_ids):
     conn.commit()
     conn.close()
     return True
+
+def get_all_papers():
+    conn = get_db_connection()
+    papers_raw = conn.execute('SELECT id, title FROM papers').fetchall()
+
+    result = []
+    for paper in papers_raw:
+        paper_id = paper['id']
+        print(paper_id)
+        questions = conn.execute(
+            'SELECT question_id FROM paper_questions WHERE paper_id = ? ORDER BY position',
+            (paper_id,)
+        ).fetchall()
+        question_ids = [q['question_id'] for q in questions]
+        print(question_ids)
+        result.append({
+            'title': paper['title'],
+            'question_count': len(question_ids),
+            'question_ids': question_ids
+        })
+        print(result)
+
+    conn.close()
+    return result
+
+def delete_paper_by_title(title):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # 获取 paper_id
+    paper_row = cur.execute('SELECT id FROM papers WHERE title = ?', (title,)).fetchone()
+    if not paper_row:
+        conn.close()
+        return False
+
+    paper_id = paper_row['id']
+
+    # 删除 paper_questions 中的关联记录
+    cur.execute('DELETE FROM paper_questions WHERE paper_id = ?', (paper_id,))
+
+    # 删除 papers 表中的记录
+    cur.execute('DELETE FROM papers WHERE id = ?', (paper_id,))
+
+    conn.commit()
+    success = cur.rowcount > 0
+    conn.close()
+    return success
+
+def get_questions_by_ids(ids):
+    if not ids:
+        return []
+
+    conn = get_db_connection()
+    placeholders = ','.join(['?'] * len(ids))
+    query = f'SELECT * FROM questions WHERE id IN ({placeholders})'
+    rows = conn.execute(query, ids).fetchall()
+    conn.close()
+
+    # 保证返回顺序与 ids 一致
+    row_map = {row['id']: dict(row) for row in rows}
+    return [row_map[qid] for qid in ids if qid in row_map]

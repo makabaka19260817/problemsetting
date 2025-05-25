@@ -16,15 +16,18 @@ def teacher_required(f):
         return f(*args, **kwargs)
     return wrapper
 
+
 @dashboard_teacher_bp.route('/ai_question_generation')
 @teacher_required
 def ai_question_generation():
     return render_template('subpages/teacher/ai_question_generation.html', username=session['username'])
 
+
 @dashboard_teacher_bp.route('/exam_management')
 @teacher_required
 def exam_management():
     return render_template('subpages/teacher/exam_management.html', username=session['username'])
+
 
 @dashboard_teacher_bp.route('/paper_generation')
 @teacher_required
@@ -47,6 +50,36 @@ def save_paper_api():
         return jsonify({'success': False, 'message': '标题和题目不能为空'}), 400
     success = db_problems.save_paper(title, questions)
     return jsonify({'success': success})
+
+@dashboard_teacher_bp.route('/paper/all')
+@teacher_required
+def get_all_exam_papers():
+    papers = db_problems.get_all_papers()
+    # papers 已是列表字典，直接 jsonify 返回
+    return jsonify({'success': True, 'papers': papers})
+
+@dashboard_teacher_bp.route('/paper/delete', methods=['POST'])
+@teacher_required
+def delete_exam_paper():
+    data = request.get_json()
+    title = data.get('title')
+    if not title:
+        return jsonify({'success': False, 'error': '标题缺失'})
+    success = db_problems.delete_paper_by_title(title)
+    if success:
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False, 'error': '删除失败，未找到对应试卷'})
+
+@dashboard_teacher_bp.route('/paper/questions', methods=['POST'])
+@teacher_required
+def get_questions_by_paper():
+    data = request.get_json()
+    question_ids = data.get('question_ids', [])
+    if not question_ids:
+        return jsonify({'success': False, 'error': '未提供题目 ID 列表'})
+    questions = db_problems.get_questions_by_ids(question_ids)
+    return jsonify({'success': True, 'questions': questions})
 
 @dashboard_teacher_bp.route('/question_bank')
 @teacher_required
