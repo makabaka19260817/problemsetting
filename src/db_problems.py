@@ -4,7 +4,8 @@ from flask import jsonify
 import math
 import uuid
 
-DB_PATH = 'questions_papers.db'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, 'questions_papers.db')
 
 def get_db_connection():
     # 如果数据库文件不存在，则初始化

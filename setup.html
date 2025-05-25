@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>系统初始化配置</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f2f5;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 25px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        h2 {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        
+        input[type="password"],
+        input[type="text"] {
+            width: 100%;
+            padding: 8px 10px;
+            margin-top: 6px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        
+        button {
+            margin-top: 25px;
+            width: 100%;
+            padding: 10px;
+            background-color: #4F46E5;
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        button:disabled {
+            background-color: #a0a0a0;
+            cursor: not-allowed;
+        }
+        
+        .note {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #555;
+            text-align: center;
+        }
+        
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            text-align: center;
+            border-radius: 4px;
+        }
+        
+        .success {
+            background-color: #daf5d7;
+            color: #27632a;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #842029;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>系统初始化配置</h2>
+        <form id="setupForm">
+            <label for="adminPassword">管理员密码（默认账号：admin）</label>
+            <input type="password" id="adminPassword" name="adminPassword" required autocomplete="new-password" />
+
+            <label for="apiKey">OpenRouter API Key</label>
+            <input type="text" id="apiKey" name="apiKey" required autocomplete="off" />
+
+            <button type="submit">提交配置</button>
+        </form>
+        <div class="note">请牢记管理员密码，系统默认账号为 <strong>admin</strong></div>
+        <div id="message" class="message" style="display:none;"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('setupForm');
+        const messageDiv = document.getElementById('message');
+
+        form.addEventListener('submit', async(e) => {
+            e.preventDefault();
+            messageDiv.style.display = 'none';
+            messageDiv.className = 'message';
+
+            const adminPassword = form.adminPassword.value.trim();
+            const apiKey = form.apiKey.value.trim();
+
+            if (!adminPassword || !apiKey) {
+                showMessage('请填写所有字段', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/setup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        adminPassword,
+                        apiKey
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || '提交失败');
+                }
+
+                showMessage('配置成功！请运行 python ./src/app.py 启动系统。', 'success');
+                form.querySelector('button[type=submit]').disabled = true;
+
+            } catch (err) {
+                showMessage('配置失败: ' + err.message, 'error');
+            }
+        });
+
+        function showMessage(msg, type) {
+            messageDiv.textContent = msg;
+            messageDiv.classList.add(type);
+            messageDiv.style.display = 'block';
+        }
+    </script>
+</body>
+
+</html>

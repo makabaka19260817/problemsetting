@@ -3,7 +3,8 @@ import json
 import os
 from datetime import datetime
 
-DB_PATH = 'answers.db'  # 你可以改成配置里的路径
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, 'answers.db')
 
 def init_db():
     """初始化作答数据库，建表等操作"""

@@ -1,3 +1,4 @@
 /src/default_admin_password
 /src/__pycache__
 /src/*.db
+/src/openrouter_apikey

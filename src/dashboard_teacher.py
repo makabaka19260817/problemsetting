@@ -4,8 +4,15 @@ from collections import defaultdict
 import db_problems
 import db_exam
 import json
+import requests
+import os
 
 dashboard_teacher_bp = Blueprint('dashboard_teacher', __name__, url_prefix='/teacher')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+OPENROUTER_API_KEY_DIR = os.path.join(BASE_DIR, 'openrouter_apikey')
+
+with open(OPENROUTER_API_KEY_DIR, 'r') as f:
+    OPENROUTER_API_KEY = f.read().strip()
 
 def teacher_required(f):
     from functools import wraps
@@ -20,10 +27,64 @@ def teacher_required(f):
     return wrapper
 
 
+#
+#
+# ai generation problemsetting
+#
+#
+
 @dashboard_teacher_bp.route('/ai_question_generation')
 @teacher_required
 def ai_question_generation():
     return render_template('subpages/teacher/ai_question_generation.html', username=session['username'])
+
+@dashboard_teacher_bp.route('/ai_generate', methods=['POST'])
+@teacher_required
+def ai_generate():
+    try:
+        # 获取用户输入（前端传来的 prompt）
+        user_input = request.json.get('prompt', '').strip()
+
+        if not user_input:
+            return jsonify({'error': 'Prompt 不能为空'}), 400
+
+        # 构造 API 请求
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+        }
+
+        final_prompt = f'''你要根据以下询问生成一道题目：{user_input}
+        请给出题目内容、选项和答案。不要输出其它内容。输出格式如下：
+        题目类型：选择题/多选题/判断题/简答题
+        题目内容：题干、（如果是选择题或多选题，给出选项）
+        题目答案：答案
+        '''
+
+        payload = {
+            "model": "qwen/qwen3-30b-a3b:free",  # 你想用的模型
+            "messages": [
+                {"role": "user", "content": final_prompt}
+            ]
+        }
+        # print(payload)
+        response = requests.post(
+            url="https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            data=json.dumps(payload)
+        )
+
+        if response.status_code != 200:
+            return jsonify({'error': '大模型请求失败', 'detail': response.text}), 500
+        # print(response.json())
+        data = response.json()
+        # 提取模型回复
+        reply = data['choices'][0]['message']['content']
+
+        return jsonify({'reply': reply})
+
+    except Exception as e:
+        return jsonify({'error': '服务器错误', 'detail': str(e)}), 500
 
 
 #

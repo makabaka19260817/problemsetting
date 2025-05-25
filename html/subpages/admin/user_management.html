@@ -7,79 +7,95 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 p-10">
-    <!-- 🔝 顶部导航 -->
-    <div class="flex justify-between items-center mb-6">
-        <div class="space-x-4">
-            <a href="{{ url_for('dashboard.dashboard') }}" class="text-blue-600 hover:underline font-medium">返回管理面板</a>
-        </div>
+<body class="bg-gray-100 min-h-screen py-10 px-4 flex flex-col items-center">
+
+    <!-- 顶部导航 -->
+    <div class="w-full max-w-4xl flex justify-between items-center mb-6">
+        <a href="{{ url_for('dashboard.dashboard') }}" class="text-blue-600 font-semibold hover:underline transition">
+            ← 返回管理面板
+        </a>
         <form action="{{ url_for('logout') }}" method="post">
-            <button type="submit" class="text-red-600 hover:underline font-medium">注销并返回登录</button>
+            <button type="submit" class="bg-red-100 text-red-600 hover:bg-red-200 px-4 py-2 rounded shadow-sm font-medium transition">
+                注销并返回登录
+            </button>
         </form>
     </div>
-    <h1 class="text-2xl font-bold mb-6">用户管理</h1>
+
+    <!-- 页面标题 -->
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">用户管理</h1>
+
+    <!-- 消息提示 -->
     {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}
-    <ul class="mb-4">
+    <div class="w-full max-w-4xl mb-4">
         {% for category, message in messages %}
-        <li class="text-{{ 'red' if category == 'error' else 'green' }}-600">{{ message }}</li>
+        <div class="px-4 py-3 rounded text-sm font-medium
+            {{ 'bg-green-100 text-green-700' if category != 'error' else 'bg-red-100 text-red-700' }}">
+            {{ message }}
+        </div>
         {% endfor %}
-    </ul>
+    </div>
     {% endif %} {% endwith %}
 
     <!-- 用户列表 -->
-    <div class="mb-10">
-        <h2 class="text-xl font-semibold mb-2">现有用户</h2>
-        <table class="min-w-full bg-white shadow-md rounded">
-            <thead>
-                <tr class="bg-gray-200 text-gray-600 text-left">
-                    <th class="py-2 px-4">用户名</th>
-                    <th class="py-2 px-4">邮箱</th>
-                    <th class="py-2 px-4">是否管理员</th>
-                    <th class="py-2 px-4">操作</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in users %}
-                <tr class="border-t">
-                    <td class="py-2 px-4">{{ user['username'] }}</td>
-                    <td class="py-2 px-4">{{ user['email'] }}</td>
-                    <td class="py-2 px-4">{{ '是' if user['is_admin'] else '否' }}</td>
-                    <td class="py-2 px-4">
-                        <form action="{{ url_for('dashboard_admin.delete_user_route') }}" method="post" class="inline">
-                            <input type="hidden" name="username" value="{{ user['username'] }}">
-                            <button class="text-red-600 hover:underline" onclick="return confirm('确认删除该用户？')">删除</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="w-full max-w-4xl bg-white rounded-xl shadow p-6 mb-10">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">现有用户</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm text-left text-gray-700">
+                <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+                    <tr>
+                        <th class="py-3 px-4">用户名</th>
+                        <th class="py-3 px-4">邮箱</th>
+                        <th class="py-3 px-4">是否管理员</th>
+                        <th class="py-3 px-4">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr class="border-t hover:bg-gray-50 transition">
+                        <td class="py-2 px-4">{{ user['username'] }}</td>
+                        <td class="py-2 px-4">{{ user['email'] }}</td>
+                        <td class="py-2 px-4">{{ '是' if user['is_admin'] else '否' }}</td>
+                        <td class="py-2 px-4">
+                            <form action="{{ url_for('dashboard_admin.delete_user_route') }}" method="post" class="inline">
+                                <input type="hidden" name="username" value="{{ user['username'] }}">
+                                <button type="submit" class="text-red-600 hover:underline" onclick="return confirm('确认删除该用户？')">
+                                    删除
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <!-- 添加用户表单 -->
-    <div>
-        <h2 class="text-xl font-semibold mb-2">添加新用户</h2>
-        <form action="{{ url_for('dashboard_admin.add_user') }}" method="post" class="space-y-4 bg-white p-6 rounded shadow-md">
+    <div class="w-full max-w-4xl bg-white rounded-xl shadow p-6">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">添加新用户</h2>
+        <form action="{{ url_for('dashboard_admin.add_user') }}" method="post" class="space-y-5">
             <div>
-                <label class="block">用户名：</label>
-                <input type="text" name="username" required class="border rounded w-full p-2">
+                <label class="block font-medium mb-1">用户名：</label>
+                <input type="text" name="username" required class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
             </div>
             <div>
-                <label class="block">邮箱：</label>
-                <input type="email" name="email" required class="border rounded w-full p-2">
+                <label class="block font-medium mb-1">邮箱：</label>
+                <input type="email" name="email" required class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
             </div>
             <div>
-                <label class="block">密码：</label>
-                <input type="password" name="password" required class="border rounded w-full p-2">
+                <label class="block font-medium mb-1">密码：</label>
+                <input type="password" name="password" required class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
             </div>
             <div>
-                <label class="block">是否管理员：</label>
-                <select name="is_admin" class="border rounded w-full p-2">
-          <option value="0">否</option>
-          <option value="1">是</option>
-        </select>
+                <label class="block font-medium mb-1">是否管理员：</label>
+                <select name="is_admin" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    <option value="0">否</option>
+                    <option value="1">是</option>
+                </select>
             </div>
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">添加用户</button>
+            <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-semibold hover:bg-blue-700 transition">
+                添加用户
+            </button>
         </form>
     </div>
 </body>

@@ -15,4 +15,5 @@
 ```bash
 # 切换到你目前环境的 python/pip
 pip install -r requirements.txt
+python setup.py
 ```

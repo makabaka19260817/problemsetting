@@ -7,83 +7,105 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="p-4">
-    <!-- 🔝 顶部导航 -->
-    <div class="flex justify-between items-center mb-6">
-        <div class="space-x-4">
-            <a href="{{ url_for('dashboard.dashboard') }}" class="text-blue-600 hover:underline font-medium">返回管理面板</a>
+<body class="bg-gray-50 text-gray-800 p-6 font-sans">
+    <!-- 顶部导航 -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <a href="{{ url_for('dashboard.dashboard') }}" class="text-blue-600 hover:underline font-medium text-lg">
+                ← 返回管理面板
+            </a>
         </div>
         <form action="{{ url_for('logout') }}" method="post">
-            <button type="submit" class="text-red-600 hover:underline font-medium">注销并返回登录</button>
+            <button type="submit" class="text-red-600 hover:underline font-medium text-lg">
+                注销并返回登录
+            </button>
         </form>
     </div>
-    <h1 class="text-2xl font-bold mb-4">考试管理</h1>
 
-    <table class="min-w-full border">
-        <thead>
-            <tr class="bg-gray-100">
-                <th class="border px-4 py-2">试卷标题</th>
-                <th class="border px-4 py-2">题目数量</th>
-                <th class="border px-4 py-2">操作</th>
-            </tr>
-        </thead>
-        <tbody id="exam-list"></tbody>
-    </table>
+    <h1 class="text-3xl font-bold mb-6 text-gray-900">📋 考试管理</h1>
 
-    <!-- 弹窗 -->
-    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white p-4 rounded w-1/2 max-h-[80vh] overflow-y-auto">
-            <h2 class="text-xl font-bold mb-2">试卷题目列表</h2>
-            <ul id="modal-content" class="space-y-2"></ul>
-            <button onclick="closeModal()" class="mt-4 bg-gray-600 text-white px-4 py-2 rounded">关闭</button>
+    <!-- 试卷列表 -->
+    <div class="mb-10">
+        <h2 class="text-2xl font-semibold mb-4">试卷列表</h2>
+        <div class="overflow-x-auto rounded shadow">
+            <table class="min-w-full text-left border border-gray-300 bg-white">
+                <thead class="bg-gray-100 text-gray-700">
+                    <tr>
+                        <th class="border px-4 py-3">试卷标题</th>
+                        <th class="border px-4 py-3">题目数量</th>
+                        <th class="border px-4 py-3">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="exam-list" class="text-sm"></tbody>
+            </table>
         </div>
     </div>
 
-    <!-- 发起考试弹窗 -->
+    <!-- 弹窗：查看题目 -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-3/4 max-h-[80vh] overflow-y-auto">
+            <h2 class="text-2xl font-semibold mb-4">📑 试卷题目列表</h2>
+            <ul id="modal-content" class="space-y-3"></ul>
+            <div class="text-right mt-6">
+                <button onclick="closeModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                    关闭
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 弹窗：发起考试 -->
     <div id="examModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg w-full max-w-md space-y-4">
-            <h2 class="text-xl font-bold">发起考试</h2>
-            <form id="examForm" class="space-y-3">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-lg space-y-5">
+            <h2 class="text-2xl font-bold">📝 发起考试</h2>
+            <form id="examForm" class="space-y-4">
                 <input type="hidden" id="exam-paper-title">
                 <div>
                     <label class="block font-medium mb-1">考试标题</label>
-                    <input type="text" id="exam-title" class="w-full border px-2 py-1 rounded" required>
+                    <input type="text" id="exam-title" class="w-full border px-3 py-2 rounded focus:outline-none focus:ring focus:border-blue-400" required>
                 </div>
                 <div>
                     <label class="block font-medium mb-1">开始时间</label>
-                    <input type="datetime-local" id="start-time" class="w-full border px-2 py-1 rounded" required>
+                    <input type="datetime-local" id="start-time" class="w-full border px-3 py-2 rounded focus:outline-none focus:ring focus:border-blue-400" required>
                 </div>
                 <div>
                     <label class="block font-medium mb-1">结束时间</label>
-                    <input type="datetime-local" id="end-time" class="w-full border px-2 py-1 rounded" required>
+                    <input type="datetime-local" id="end-time" class="w-full border px-3 py-2 rounded focus:outline-none focus:ring focus:border-blue-400" required>
                 </div>
                 <div>
                     <label class="block font-medium mb-1">考试简介</label>
-                    <textarea id="exam-desc" class="w-full border px-2 py-1 rounded"></textarea>
+                    <textarea id="exam-desc" rows="3" class="w-full border px-3 py-2 rounded focus:outline-none focus:ring focus:border-blue-400"></textarea>
                 </div>
-                <div class="flex justify-end space-x-3">
-                    <button type="button" onclick="closeExamModal()" class="px-3 py-1 bg-gray-400 text-white rounded">取消</button>
-                    <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded">确认发起</button>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeExamModal()" class="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500">
+                        取消
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                        确认发起
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 在已有内容下方添加此内容 -->
-
-    <h2 class="text-xl font-bold mt-8 mb-4">所有考试</h2>
-    <table class="min-w-full border">
-        <thead>
-            <tr class="bg-gray-100">
-                <th class="border px-4 py-2">考试标题</th>
-                <th class="border px-4 py-2">试卷标题</th>
-                <th class="border px-4 py-2">开始时间</th>
-                <th class="border px-4 py-2">结束时间</th>
-                <th class="border px-4 py-2">操作</th>
-            </tr>
-        </thead>
-        <tbody id="exam-table-body"></tbody>
-    </table>
+    <!-- 考试列表 -->
+    <div>
+        <h2 class="text-2xl font-semibold mb-4">📚 所有考试</h2>
+        <div class="overflow-x-auto rounded shadow">
+            <table class="min-w-full text-left border border-gray-300 bg-white">
+                <thead class="bg-gray-100 text-gray-700">
+                    <tr>
+                        <th class="border px-4 py-3">考试标题</th>
+                        <th class="border px-4 py-3">试卷标题</th>
+                        <th class="border px-4 py-3">开始时间</th>
+                        <th class="border px-4 py-3">结束时间</th>
+                        <th class="border px-4 py-3">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="exam-table-body" class="text-sm"></tbody>
+            </table>
+        </div>
+    </div>
 
     <script>
         async function loadExamList() {
