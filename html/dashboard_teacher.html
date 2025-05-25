@@ -9,12 +9,18 @@
 </head>
 
 <body class="p-10 bg-gray-100">
+    <!-- 🔝 顶部导航 -->
+    <div class="flex justify-between items-center mb-6">
+        <form action="{{ url_for('logout') }}" method="post">
+            <button type="submit" class="text-red-600 hover:underline font-medium">注销并返回登录</button>
+        </form>
+    </div>
     <h1 class="text-2xl font-bold mb-6">欢迎你，教师 {{ username }}</h1>
     <ul class="space-y-4">
-        <li><a href="#" class="text-blue-600 hover:underline">题库管理</a></li>
-        <li><a href="#" class="text-blue-600 hover:underline">考试管理</a></li>
-        <li><a href="#" class="text-blue-600 hover:underline">组卷管理</a></li>
-        <li><a href="#" class="text-blue-600 hover:underline">出题管理</a></li>
+        <li><a href="/teacher/question_bank" class="text-blue-600 hover:underline">题库管理</a></li>
+        <li><a href="/teacher/exam_management" class="text-blue-600 hover:underline">考试管理</a></li>
+        <li><a href="/teacher/paper_generation" class="text-blue-600 hover:underline">组卷管理</a></li>
+        <li><a href="/teacher/ai_question_generation" class="text-blue-600 hover:underline">出题管理</a></li>
     </ul>
 </body>
 

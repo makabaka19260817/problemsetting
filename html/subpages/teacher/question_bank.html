@@ -1,15 +1,249 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>题库管理</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 
-<body class="p-10 bg-white">
-    <h1 class="text-2xl font-bold mb-4">题库管理</h1>
-    <p class="text-gray-700">在此页面可以添加、编辑和删除题目。</p>
+<body class="p-6 bg-gray-50">
+    <!-- 🔝 顶部导航 -->
+    <div class="flex justify-between items-center mb-6">
+        <div class="space-x-4">
+            <a href="{{ url_for('dashboard.dashboard') }}" class="text-blue-600 hover:underline font-medium">返回管理面板</a>
+        </div>
+        <form action="{{ url_for('logout') }}" method="post">
+            <button type="submit" class="text-red-600 hover:underline font-medium">注销并返回登录</button>
+        </form>
+    </div>
+
+    <h2 class="text-2xl font-bold mb-4">题库管理</h2>
+
+    <button id="btnAddQuestion" class="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">添加题目</button>
+
+    <table class="min-w-full bg-white rounded shadow overflow-hidden">
+        <thead class="bg-gray-100 border-b">
+            <tr>
+                <th class="text-left p-3">类型</th>
+                <th class="text-left p-3">题面</th>
+                <th class="text-left p-3">难易度</th>
+                <th class="text-left p-3">操作</th>
+            </tr>
+        </thead>
+        <tbody id="questionTableBody" class="divide-y"></tbody>
+    </table>
+
+    <div class="mt-4 flex justify-center space-x-2" id="pagination"></div>
+
+    <!-- 弹窗遮罩 -->
+    <div id="modalOverlay" class="fixed inset-0 bg-black bg-opacity-40 hidden"></div>
+
+    <!-- 题目弹窗 -->
+    <div id="questionModal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded shadow-lg p-6 w-11/12 max-w-2xl hidden z-50">
+        <h3 class="text-xl font-semibold mb-4" id="modalTitle">查看 / 编辑题目</h3>
+        <form id="questionForm" class="space-y-4">
+            <input type="hidden" id="questionId" />
+            <div>
+                <label for="qtype" class="block font-medium mb-1">类型</label>
+                <select id="qtype" class="w-full border rounded px-3 py-2" required>
+        <option value="single_choice">选择题（单选）</option>
+        <option value="multiple_choice">选择题（多选）</option>
+        <option value="true_false">判断题</option>
+        <option value="essay">问答题</option>
+      </select>
+            </div>
+            <div>
+                <label for="content" class="block font-medium mb-1">题面</label>
+                <textarea id="content" class="w-full border rounded px-3 py-2" rows="3" required></textarea>
+            </div>
+            <div>
+                <label for="difficulty" class="block font-medium mb-1">难易度（1-5）</label>
+                <input type="number" id="difficulty" class="w-full border rounded px-3 py-2" min="1" max="5" required />
+            </div>
+            <div>
+                <label for="answer" class="block font-medium mb-1">答案（JSON或文本）</label>
+                <textarea id="answer" class="w-full border rounded px-3 py-2" rows="3" required></textarea>
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">保存</button>
+                <button type="button" id="btnCloseModal" class="px-4 py-2 bg-gray-400 rounded hover:bg-gray-500">关闭</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        let currentPage = 1,
+            totalPages = 1;
+
+        function renderQType(qtype) {
+            switch (qtype) {
+                case 'single_choice':
+                    return '选择题（单选）';
+                case 'multiple_choice':
+                    return '选择题（多选）';
+                case 'true_false':
+                    return '判断题';
+                case 'essay':
+                    return '问答题';
+                default:
+                    return qtype;
+            }
+        }
+
+        function showModal() {
+            document.getElementById('modalOverlay').classList.remove('hidden');
+            document.getElementById('questionModal').classList.remove('hidden');
+        }
+
+        function hideModal() {
+            document.getElementById('modalOverlay').classList.add('hidden');
+            document.getElementById('questionModal').classList.add('hidden');
+        }
+
+        function loadQuestions(page = 1) {
+            axios.get(`/teacher/questions?page=${page}`)
+                .then(res => {
+                    const data = res.data;
+                    totalPages = data.total_pages;
+                    currentPage = data.current_page;
+                    const tbody = document.getElementById('questionTableBody');
+                    tbody.innerHTML = '';
+                    data.questions.forEach(q => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-gray-100';
+                        tr.innerHTML = `
+            <td class="p-3">${renderQType(q.qtype)}</td>
+            <td class="p-3 max-w-xs truncate" title="${q.content}">${q.content}</td>
+            <td class="p-3">${q.difficulty}</td>
+            <td class="p-3 space-x-2">
+              <button class="text-blue-600 hover:underline btn-view" data-id="${q.id}">查看详情</button>
+              <button class="text-yellow-600 hover:underline btn-edit" data-id="${q.id}">编辑</button>
+              <button class="text-red-600 hover:underline btn-delete" data-id="${q.id}">删除</button>
+            </td>`;
+                        tbody.appendChild(tr);
+                    });
+                    renderPagination();
+                    bindTableButtons();
+                })
+                .catch(err => alert('加载题目失败'));
+        }
+
+        function renderPagination() {
+            const container = document.getElementById('pagination');
+            container.innerHTML = '';
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.className = i === currentPage ?
+                    'px-3 py-1 bg-blue-600 text-white rounded' :
+                    'px-3 py-1 bg-gray-200 rounded hover:bg-gray-300';
+                btn.addEventListener('click', () => loadQuestions(i));
+                container.appendChild(btn);
+            }
+        }
+
+        function bindTableButtons() {
+            document.querySelectorAll('.btn-view').forEach(btn => {
+                btn.onclick = () => {
+                    const id = btn.dataset.id;
+                    axios.get(`/teacher/question/${id}`).then(res => {
+                        const q = res.data;
+                        document.getElementById('modalTitle').textContent = '查看题目';
+                        fillForm(q);
+                        disableForm(true);
+                        showModal();
+                    }).catch(() => alert('获取详情失败'));
+                }
+            });
+            document.querySelectorAll('.btn-edit').forEach(btn => {
+                btn.onclick = () => {
+                    const id = btn.dataset.id;
+                    axios.get(`/teacher/question/${id}`).then(res => {
+                        const q = res.data;
+                        document.getElementById('modalTitle').textContent = '编辑题目';
+                        fillForm(q);
+                        disableForm(false);
+                        showModal();
+                    }).catch(() => alert('获取详情失败'));
+                }
+            });
+            document.querySelectorAll('.btn-delete').forEach(btn => {
+                btn.onclick = () => {
+                    const id = btn.dataset.id;
+                    if (confirm('确定删除该题目吗？')) {
+                        axios.delete(`/teacher/question/${id}`).then(() => {
+                            alert('删除成功');
+                            loadQuestions(currentPage);
+                        }).catch(() => alert('删除失败'));
+                    }
+                }
+            });
+        }
+
+        function fillForm(q) {
+            document.getElementById('questionId').value = q.id || '';
+            document.getElementById('qtype').value = q.qtype || '';
+            document.getElementById('content').value = q.content || '';
+            document.getElementById('difficulty').value = q.difficulty || 1;
+            document.getElementById('answer').value = q.answer || '';
+        }
+
+        function disableForm(disable) {
+            ['qtype', 'content', 'difficulty', 'answer'].forEach(id => {
+                document.getElementById(id).disabled = disable;
+            });
+            document.querySelector('#questionForm button[type=submit]').style.display = disable ? 'none' : 'inline-block';
+        }
+
+        document.getElementById('btnAddQuestion').onclick = () => {
+            document.getElementById('modalTitle').textContent = '添加新题目';
+            fillForm({
+                qtype: 'single_choice',
+                content: '',
+                difficulty: 1,
+                answer: ''
+            });
+            disableForm(false);
+            document.getElementById('questionId').value = '';
+            showModal();
+        };
+
+        document.getElementById('btnCloseModal').onclick = hideModal;
+
+        document.getElementById('questionForm').onsubmit = e => {
+            e.preventDefault();
+            const id = document.getElementById('questionId').value;
+            const payload = {
+                qtype: document.getElementById('qtype').value,
+                content: document.getElementById('content').value,
+                difficulty: parseInt(document.getElementById('difficulty').value),
+                answer: document.getElementById('answer').value,
+            };
+            if (id) {
+                // 编辑
+                axios.put(`/teacher/question/${id}`, payload)
+                    .then(() => {
+                        alert('修改成功');
+                        hideModal();
+                        loadQuestions(currentPage);
+                    }).catch(() => alert('修改失败'));
+            } else {
+                // 新增
+                axios.post('/teacher/question', payload)
+                    .then(() => {
+                        alert('添加成功');
+                        hideModal();
+                        loadQuestions(1);
+                    }).catch(() => alert('添加失败'));
+            }
+        };
+
+        // 首次加载
+        loadQuestions();
+    </script>
+
 </body>
 
 </html>
