@@ -31,6 +31,23 @@ def exam_management():
 def paper_generation():
     return render_template('subpages/teacher/paper_generation.html', username=session['username'])
 
+@dashboard_teacher_bp.route('/questions/all')
+@teacher_required
+def all_questions():
+    questions = db_problems.get_all_questions()
+    return jsonify(questions)
+
+@dashboard_teacher_bp.route('/paper', methods=['POST'])
+@teacher_required
+def save_paper_api():
+    data = request.get_json()
+    title = data.get('title')
+    questions = data.get('questions')  # ordered list of question IDs
+    if not title or not questions:
+        return jsonify({'success': False, 'message': '标题和题目不能为空'}), 400
+    success = db_problems.save_paper(title, questions)
+    return jsonify({'success': success})
+
 @dashboard_teacher_bp.route('/question_bank')
 @teacher_required
 def question_bank():

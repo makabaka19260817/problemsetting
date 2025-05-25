@@ -25,6 +25,21 @@ def init_db():
             answer TEXT NOT NULL
         )
     ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS papers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS paper_questions (
+            paper_id INTEGER,
+            question_id INTEGER,
+            position INTEGER,
+            FOREIGN KEY (paper_id) REFERENCES papers(id),
+            FOREIGN KEY (question_id) REFERENCES questions(id)
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -75,3 +90,26 @@ def delete_question(q_id):
     conn.execute('DELETE FROM questions WHERE id=?', (q_id,))
     conn.commit()
     conn.close()
+
+def get_all_questions():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, qtype, content, difficulty FROM questions')
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def save_paper(title, question_ids):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('INSERT INTO papers (title) VALUES (?)', (title,))
+    paper_id = cursor.lastrowid
+
+    for position, qid in enumerate(question_ids):
+        cursor.execute('INSERT INTO paper_questions (paper_id, question_id, position) VALUES (?, ?, ?)',
+                       (paper_id, qid, position))
+
+    conn.commit()
+    conn.close()
+    return True

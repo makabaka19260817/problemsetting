@@ -2,12 +2,13 @@
 <html lang="zh">
 
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>组卷管理</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 
-<body class="p-10 bg-white">
+<body class="p-4">
     <!-- 🔝 顶部导航 -->
     <div class="flex justify-between items-center mb-6">
         <div class="space-x-4">
@@ -18,7 +19,124 @@
         </form>
     </div>
     <h1 class="text-2xl font-bold mb-4">组卷管理</h1>
-    <p class="text-gray-700">自动或手动选择题目生成试卷。</p>
+
+    <div class="grid grid-cols-2 gap-4">
+        <!-- 所有题目 -->
+        <div>
+            <h2 class="font-semibold mb-2">题库</h2>
+            <ul id="question-list" class="space-y-2"></ul>
+        </div>
+
+        <!-- 当前卷子 -->
+        <div>
+            <h2 class="font-semibold mb-2">当前试卷</h2>
+            <ul id="paper-list" class="space-y-2 border rounded p-2 min-h-[200px]"></ul>
+            <input id="paper-title" class="border mt-2 p-1 w-full" placeholder="试卷标题" />
+            <button onclick="savePaper()" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded">完成组卷</button>
+        </div>
+    </div>
+
+    <!-- 弹窗 -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+        <div class="bg-white p-4 rounded w-1/2">
+            <h2 class="text-xl font-bold mb-2">题目信息</h2>
+            <pre id="modal-content" class="whitespace-pre-wrap"></pre>
+            <button onclick="closeModal()" class="mt-4 bg-gray-600 text-white px-4 py-2 rounded">关闭</button>
+        </div>
+    </div>
+
+    <script>
+        let allQuestions = [];
+
+        async function loadQuestions() {
+            const res = await fetch('/teacher/questions/all');
+            allQuestions = await res.json();
+            const list = document.getElementById('question-list');
+            list.innerHTML = '';
+            for (const q of allQuestions) {
+                const li = document.createElement('li');
+                li.className = 'p-2 border rounded bg-white flex justify-between items-center';
+                li.textContent = `[${q.qtype}] ${q.content.slice(0, 20)}... 难度: ${q.difficulty}`;
+
+                const btnContainer = document.createElement('div');
+
+                const viewBtn = document.createElement('button');
+                viewBtn.textContent = '查看详细信息';
+                viewBtn.className = 'ml-2 text-blue-600 hover:underline';
+                viewBtn.onclick = () => showModal(q);
+                btnContainer.appendChild(viewBtn);
+
+                const addBtn = document.createElement('button');
+                addBtn.textContent = '加入';
+                addBtn.className = 'ml-2 text-green-600 hover:underline';
+                addBtn.onclick = () => addToPaper(q);
+                btnContainer.appendChild(addBtn);
+
+                li.appendChild(btnContainer);
+                list.appendChild(li);
+            }
+        }
+
+        function addToPaper(q) {
+            const li = document.createElement('li');
+            li.className = 'p-2 border rounded bg-white flex justify-between items-center';
+            li.textContent = `[${q.qtype}] ${q.content.slice(0, 20)}... 难度: ${q.difficulty}`;
+            li.dataset.qid = q.id;
+
+            const btnContainer = document.createElement('div');
+
+            const viewBtn = document.createElement('button');
+            viewBtn.textContent = '查看详细信息';
+            viewBtn.className = 'ml-2 text-blue-600 hover:underline';
+            viewBtn.onclick = () => showModal(q);
+            btnContainer.appendChild(viewBtn);
+
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = '移除';
+            removeBtn.className = 'ml-2 text-red-600 hover:underline';
+            removeBtn.onclick = () => li.remove();
+            btnContainer.appendChild(removeBtn);
+
+            li.appendChild(btnContainer);
+            document.getElementById('paper-list').appendChild(li);
+        }
+
+        async function savePaper() {
+            const title = document.getElementById('paper-title').value;
+            const qids = Array.from(document.querySelectorAll('#paper-list > li')).map(li => li.dataset.qid);
+            const res = await fetch('/teacher/paper', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title,
+                    questions: qids
+                })
+            });
+            const result = await res.json();
+            alert(result.success ? '保存成功' : '保存失败');
+        }
+
+        function showModal(question) {
+            document.getElementById('modal-content').textContent =
+                `类型: ${question.qtype}\n内容: ${question.content}\n难度: ${question.difficulty}`;
+            document.getElementById('modal').classList.remove('hidden');
+            document.getElementById('modal').classList.add('flex');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+            document.getElementById('modal').classList.remove('flex');
+        }
+
+        window.onload = () => {
+            loadQuestions();
+            Sortable.create(document.getElementById('paper-list'), {
+                animation: 150
+            });
+        }
+    </script>
 </body>
 
 </html>
