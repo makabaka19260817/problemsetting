@@ -64,10 +64,10 @@ def login_fail():
     message = request.args.get('message', '登录失败')
     return render_template('login_fail.html', message=message)
 
-@app.route('/logout')
+@app.route('/logout', methods=['POST'])
 def logout():
-    session.pop('user', None)
-    return redirect('/auth')
+    session.clear()
+    return redirect(url_for('login_register_page'))
 
 if __name__ == '__main__':
     init_db()

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <title>用户管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 p-10">
+    <!-- 🔝 顶部导航 -->
+    <div class="flex justify-between items-center mb-6">
+        <div class="space-x-4">
+            <a href="{{ url_for('dashboard.dashboard') }}" class="text-blue-600 hover:underline font-medium">返回管理面板</a>
+        </div>
+        <form action="{{ url_for('logout') }}" method="post">
+            <button type="submit" class="text-red-600 hover:underline font-medium">注销并返回登录</button>
+        </form>
+    </div>
+    <h1 class="text-2xl font-bold mb-6">用户管理</h1>
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}
+    <ul class="mb-4">
+        {% for category, message in messages %}
+        <li class="text-{{ 'red' if category == 'error' else 'green' }}-600">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %} {% endwith %}
+
+    <!-- 用户列表 -->
+    <div class="mb-10">
+        <h2 class="text-xl font-semibold mb-2">现有用户</h2>
+        <table class="min-w-full bg-white shadow-md rounded">
+            <thead>
+                <tr class="bg-gray-200 text-gray-600 text-left">
+                    <th class="py-2 px-4">用户名</th>
+                    <th class="py-2 px-4">邮箱</th>
+                    <th class="py-2 px-4">是否管理员</th>
+                    <th class="py-2 px-4">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr class="border-t">
+                    <td class="py-2 px-4">{{ user['username'] }}</td>
+                    <td class="py-2 px-4">{{ user['email'] }}</td>
+                    <td class="py-2 px-4">{{ '是' if user['is_admin'] else '否' }}</td>
+                    <td class="py-2 px-4">
+                        <form action="/delete_user" method="post" class="inline">
+                            <input type="hidden" name="username" value="{{ user['username'] }}">
+                            <button class="text-red-600 hover:underline" onclick="return confirm('确认删除该用户？')">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 添加用户表单 -->
+    <div>
+        <h2 class="text-xl font-semibold mb-2">添加新用户</h2>
+        <form action="/add_user" method="post" class="space-y-4 bg-white p-6 rounded shadow-md">
+            <div>
+                <label class="block">用户名：</label>
+                <input type="text" name="username" required class="border rounded w-full p-2">
+            </div>
+            <div>
+                <label class="block">邮箱：</label>
+                <input type="email" name="email" required class="border rounded w-full p-2">
+            </div>
+            <div>
+                <label class="block">密码：</label>
+                <input type="password" name="password" required class="border rounded w-full p-2">
+            </div>
+            <div>
+                <label class="block">是否管理员：</label>
+                <select name="is_admin" class="border rounded w-full p-2">
+          <option value="0">否</option>
+          <option value="1">是</option>
+        </select>
+            </div>
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">添加用户</button>
+        </form>
+    </div>
+</body>
+
+</html>

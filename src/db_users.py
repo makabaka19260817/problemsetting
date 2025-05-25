@@ -74,3 +74,21 @@ def validate_user(username_or_email, password):
             'is_admin': bool(user['is_admin'])
         }
     return False, '用户名或密码错误'
+
+def get_all_users():
+    """返回所有用户信息（用于管理员界面）"""
+    conn = get_db()
+    cur = conn.execute('SELECT username, email, is_admin FROM users ORDER BY id ASC')
+    users = [
+        {'username': row['username'], 'email': row['email'], 'is_admin': bool(row['is_admin'])}
+        for row in cur.fetchall()
+    ]
+    return users
+
+def delete_user(username):
+    if username == 'admin':
+        return False, '不能删除默认管理员账户'
+    conn = get_db()
+    conn.execute('DELETE FROM users WHERE username = ?', (username,))
+    conn.commit()
+    return True, '删除成功'

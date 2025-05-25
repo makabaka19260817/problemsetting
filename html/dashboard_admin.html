@@ -9,9 +9,15 @@
 </head>
 
 <body class="p-10 bg-gray-100">
+    <!-- 🔝 顶部导航 -->
+    <div class="flex justify-between items-center mb-6">
+        <form action="{{ url_for('logout') }}" method="post">
+            <button type="submit" class="text-red-600 hover:underline font-medium">注销并返回登录</button>
+        </form>
+    </div>
     <h1 class="text-2xl font-bold mb-6">欢迎你，管理员 {{ username }}</h1>
     <ul class="space-y-4">
-        <li><a href="#" class="text-blue-600 hover:underline">用户管理</a></li>
+        <li><a href="/user_management" class="text-blue-600 hover:underline">用户管理</a></li>
     </ul>
 </body>
 
