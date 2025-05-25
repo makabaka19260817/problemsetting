@@ -4,6 +4,8 @@ from db_users import init_db, create_user, validate_user
 from dashboard import dashboard_bp
 from dashboard_admin import dashboard_admin_bp
 from dashboard_teacher import dashboard_teacher_bp
+from exam_handler import exam_handler_bp
+
 
 app = Flask(__name__, template_folder='../html')
 app.secret_key = 'supersecretkey'
@@ -76,4 +78,5 @@ if __name__ == '__main__':
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(dashboard_admin_bp)
     app.register_blueprint(dashboard_teacher_bp)
+    app.register_blueprint(exam_handler_bp)
     app.run(debug=True)

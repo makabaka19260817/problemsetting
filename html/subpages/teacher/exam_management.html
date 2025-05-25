@@ -39,7 +39,86 @@
         </div>
     </div>
 
+    <!-- 发起考试弹窗 -->
+    <div id="examModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg w-full max-w-md space-y-4">
+            <h2 class="text-xl font-bold">发起考试</h2>
+            <form id="examForm" class="space-y-3">
+                <input type="hidden" id="exam-paper-title">
+                <div>
+                    <label class="block font-medium mb-1">考试标题</label>
+                    <input type="text" id="exam-title" class="w-full border px-2 py-1 rounded" required>
+                </div>
+                <div>
+                    <label class="block font-medium mb-1">开始时间</label>
+                    <input type="datetime-local" id="start-time" class="w-full border px-2 py-1 rounded" required>
+                </div>
+                <div>
+                    <label class="block font-medium mb-1">结束时间</label>
+                    <input type="datetime-local" id="end-time" class="w-full border px-2 py-1 rounded" required>
+                </div>
+                <div>
+                    <label class="block font-medium mb-1">考试简介</label>
+                    <textarea id="exam-desc" class="w-full border px-2 py-1 rounded"></textarea>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeExamModal()" class="px-3 py-1 bg-gray-400 text-white rounded">取消</button>
+                    <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded">确认发起</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 在已有内容下方添加此内容 -->
+
+    <h2 class="text-xl font-bold mt-8 mb-4">所有考试</h2>
+    <table class="min-w-full border">
+        <thead>
+            <tr class="bg-gray-100">
+                <th class="border px-4 py-2">考试标题</th>
+                <th class="border px-4 py-2">试卷标题</th>
+                <th class="border px-4 py-2">开始时间</th>
+                <th class="border px-4 py-2">结束时间</th>
+                <th class="border px-4 py-2">操作</th>
+            </tr>
+        </thead>
+        <tbody id="exam-table-body"></tbody>
+    </table>
+
     <script>
+        async function loadExamList() {
+            const res = await fetch('/teacher/exam_management/exams');
+            const data = await res.json();
+            const tbody = document.getElementById('exam-table-body');
+            tbody.innerHTML = '';
+
+            for (const exam of data) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+        <td class="border px-4 py-2">${exam.exam_title}</td>
+        <td class="border px-4 py-2">${exam.paper_title}</td>
+        <td class="border px-4 py-2">${exam.start_time}</td>
+        <td class="border px-4 py-2">${exam.end_time}</td>
+        <td class="border px-4 py-2 space-x-2">
+          <button onclick='copyToClipboard("${exam.identifier}")' class="text-blue-600 hover:underline">复制链接</button>
+          <button onclick='viewExamResults("${exam.identifier}")' class="text-green-600 hover:underline">查看作答情况</button>
+        </td>
+      `;
+                tbody.appendChild(tr);
+            }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(location.origin + '/exam/' + text)
+                .then(() => alert('考试链接已复制：' + location.origin + '/exam/' + text))
+                .catch(err => alert('复制失败：' + err));
+        }
+
+        function viewExamResults(identifier) {
+            const url = `/teacher/exam_management/${identifier}/results_page`; // 你需要对应的结果展示页面路由
+            window.open(url, '_blank');
+        }
+
         async function loadExams() {
             const res = await fetch('/teacher/paper/all');
             const data = await res.json();
@@ -54,6 +133,7 @@
         <td class="border px-4 py-2">
           <button onclick='viewPaper(${JSON.stringify(paper.question_ids)})' class="text-blue-600 hover:underline">查看</button>
           <button onclick='deletePaper("${paper.title}")' class="text-red-600 hover:underline ml-4">删除</button>
+          <button onclick='openExamModal("${paper.title}")' class="text-green-600 hover:underline ml-4">发起考试</button>
         </td>
       `;
                 tbody.appendChild(tr);
@@ -114,7 +194,49 @@
             document.getElementById('modal').classList.remove('flex');
         }
 
-        window.onload = loadExams;
+        function openExamModal(paperTitle) {
+            document.getElementById('exam-paper-title').value = paperTitle;
+            document.getElementById('examModal').classList.remove('hidden');
+            document.getElementById('examModal').classList.add('flex');
+        }
+
+        function closeExamModal() {
+            document.getElementById('examModal').classList.add('hidden');
+            document.getElementById('examModal').classList.remove('flex');
+            document.getElementById('examForm').reset();
+        }
+
+        document.getElementById('examForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const payload = {
+                exam_title: document.getElementById('exam-title').value,
+                paper_title: document.getElementById('exam-paper-title').value,
+                start_time: document.getElementById('start-time').value,
+                end_time: document.getElementById('end-time').value,
+                description: document.getElementById('exam-desc').value
+            };
+
+            const res = await fetch('/teacher/exam_management/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await res.json();
+            if (result.success) {
+                alert(`考试已创建，标识符为 ${result.identifier}`);
+                closeExamModal();
+            } else {
+                alert('创建失败：' + (result.error || '未知错误'));
+            }
+        });
+
+        window.onload = () => {
+            loadExams(); // 原本加载试卷
+            loadExamList(); // 加载考试
+        };
     </script>
 </body>
 

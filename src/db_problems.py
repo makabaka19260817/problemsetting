@@ -2,6 +2,7 @@ import sqlite3
 import os
 from flask import jsonify
 import math
+import uuid
 
 DB_PATH = 'questions_papers.db'
 
@@ -38,6 +39,17 @@ def init_db():
             position INTEGER,
             FOREIGN KEY (paper_id) REFERENCES papers(id),
             FOREIGN KEY (question_id) REFERENCES questions(id)
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS exams (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            exam_title TEXT NOT NULL,
+            paper_title TEXT NOT NULL,
+            start_time TEXT NOT NULL,
+            end_time TEXT NOT NULL,
+            description TEXT,
+            identifier TEXT UNIQUE NOT NULL
         )
     ''')
     conn.commit()
@@ -121,19 +133,19 @@ def get_all_papers():
     result = []
     for paper in papers_raw:
         paper_id = paper['id']
-        print(paper_id)
+        # print(paper_id)
         questions = conn.execute(
             'SELECT question_id FROM paper_questions WHERE paper_id = ? ORDER BY position',
             (paper_id,)
         ).fetchall()
         question_ids = [q['question_id'] for q in questions]
-        print(question_ids)
+        # print(question_ids)
         result.append({
             'title': paper['title'],
             'question_count': len(question_ids),
             'question_ids': question_ids
         })
-        print(result)
+        # print(result)
 
     conn.close()
     return result
@@ -174,3 +186,49 @@ def get_questions_by_ids(ids):
     # 保证返回顺序与 ids 一致
     row_map = {row['id']: dict(row) for row in rows}
     return [row_map[qid] for qid in ids if qid in row_map]
+
+def generate_exam_identifier():
+    return str(uuid.uuid4())
+
+def create_exam(exam_title, paper_title, start_time, end_time, description):
+    identifier = generate_exam_identifier()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO exams (exam_title, paper_title, start_time, end_time, description, identifier)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (exam_title, paper_title, start_time, end_time, description, identifier))
+    conn.commit()
+    conn.close()
+    return identifier
+
+def get_all_exams():
+    conn = get_db_connection()
+    rows = conn.execute('SELECT exam_title, paper_title, start_time, end_time, description, identifier FROM exams ORDER BY start_time DESC').fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def get_exam_questions_by_identifier(identifier):
+    conn = get_db_connection()
+
+    exam = conn.execute('SELECT paper_title FROM exams WHERE identifier = ?', (identifier,)).fetchone()
+    if not exam:
+        conn.close()
+        return None
+
+    paper_title = exam['paper_title']
+    paper_row = conn.execute('SELECT id FROM papers WHERE title = ?', (paper_title,)).fetchone()
+    if not paper_row:
+        conn.close()
+        return None
+
+    paper_id = paper_row['id']
+    questions = conn.execute('''
+        SELECT q.* FROM questions q
+        JOIN paper_questions pq ON q.id = pq.question_id
+        WHERE pq.paper_id = ?
+        ORDER BY pq.position
+    ''', (paper_id,)).fetchall()
+
+    conn.close()
+    return questions

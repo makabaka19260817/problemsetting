@@ -1,6 +1,9 @@
 from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
 from functools import wraps
+from collections import defaultdict
 import db_problems
+import db_exam
+import json
 
 dashboard_teacher_bp = Blueprint('dashboard_teacher', __name__, url_prefix='/teacher')
 
@@ -23,11 +26,97 @@ def ai_question_generation():
     return render_template('subpages/teacher/ai_question_generation.html', username=session['username'])
 
 
+#
+#
+# exam management part in teacher's dashboard
+#
+#
+
 @dashboard_teacher_bp.route('/exam_management')
 @teacher_required
 def exam_management():
     return render_template('subpages/teacher/exam_management.html', username=session['username'])
 
+@dashboard_teacher_bp.route('/exam_management/create', methods=['POST'])
+@teacher_required
+def create_exam():
+    data = request.get_json()
+    paper_title = data.get('paper_title')
+    exam_title = data.get('exam_title')
+    start_time = data.get('start_time')
+    end_time = data.get('end_time')
+    description = data.get('description', '')
+
+    if not all([paper_title, exam_title, start_time, end_time]):
+        return jsonify({'success': False, 'error': '缺少必要字段'})
+
+    try:
+        identifier = db_problems.create_exam(exam_title, paper_title, start_time, end_time, description)
+        return jsonify({'success': True, 'identifier': identifier})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@dashboard_teacher_bp.route('/exam_management/exams')
+@teacher_required
+def get_all_exams():
+    exams = db_problems.get_all_exams()
+    return jsonify(exams)
+
+@dashboard_teacher_bp.route('/exam_management/<string:exam_identifier>/results_page')
+@teacher_required
+def exam_results_page(exam_identifier):
+    return render_template('subpages/teacher/exam_results.html', exam_identifier=exam_identifier)
+
+@dashboard_teacher_bp.route('/exam_management/<string:exam_identifier>/results')
+@teacher_required
+def view_exam_results(exam_identifier):
+    try:
+        raw_results = db_exam.get_answers_by_exam(exam_identifier)
+
+        # name => {
+        #   "submit_time": "...",
+        #   "answers": [
+        #       {"question_id": 1, "content": "题干", "answer": "A"},
+        #       ...
+        #   ]
+        # }
+        results_by_student = defaultdict(lambda: {"answers": [], "submit_time": None})
+
+        for entry in raw_results:
+            name = entry['name']
+            qid = entry['question_id']
+            answer = json.loads(entry['answer'])  # 可能是字符串或数组
+            content = entry.get('question_content', '(题干缺失)')
+            submit_time = entry['submit_time']
+
+            results_by_student[name]["answers"].append({
+                "question_id": qid,
+                "content": content,
+                "answer": answer
+            })
+
+            if results_by_student[name]["submit_time"] is None or submit_time > results_by_student[name]["submit_time"]:
+                results_by_student[name]["submit_time"] = submit_time
+
+        # 构造最终返回结果
+        results_list = [
+            {
+                "name": name,
+                "submit_time": data["submit_time"],
+                "answers": data["answers"]
+            }
+            for name, data in results_by_student.items()
+        ]
+
+        return jsonify(success=True, results=results_list)
+    except Exception as e:
+        return jsonify(success=False, error=str(e)), 500
+
+#
+#
+# exam generation part in teacher's dashboard
+#
+#
 
 @dashboard_teacher_bp.route('/paper_generation')
 @teacher_required
@@ -80,6 +169,13 @@ def get_questions_by_paper():
         return jsonify({'success': False, 'error': '未提供题目 ID 列表'})
     questions = db_problems.get_questions_by_ids(question_ids)
     return jsonify({'success': True, 'questions': questions})
+
+
+#
+#
+# question management part in teacher's dashboard
+#
+#
 
 @dashboard_teacher_bp.route('/question_bank')
 @teacher_required

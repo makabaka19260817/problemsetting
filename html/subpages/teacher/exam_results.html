@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <title>考试结果</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen p-6">
+    <div class="max-w-6xl mx-auto bg-white p-8 shadow rounded-lg">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">考试结果</h1>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full border border-gray-300 rounded-lg overflow-hidden">
+                <thead class="bg-gray-200 text-gray-700 text-sm uppercase">
+                    <tr>
+                        <th class="border px-6 py-3 text-left">姓名</th>
+                        <th class="border px-6 py-3 text-left">提交时间</th>
+                        <th class="border px-6 py-3 text-left">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="result-table-body" class="bg-white divide-y divide-gray-200">
+                    <!-- 动态填充 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 模态框 -->
+    <div id="detail-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-3xl max-h-[80vh] overflow-y-auto relative">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">作答详情</h2>
+            <div id="answer-detail" class="space-y-4 text-gray-900 font-mono whitespace-pre-wrap"></div>
+            <div class="mt-6 text-right">
+                <button onclick="closeModal()" class="px-4 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-lg">关闭</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const examIdentifier = window.location.pathname.split('/')[3]; // 例如 /exam_management/<identifier>/results_page
+
+        // 获取考试作答信息
+        fetch(`/teacher/exam_management/${examIdentifier}/results`)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) {
+                    alert('获取考试结果失败');
+                    return;
+                }
+
+                const tbody = document.getElementById('result-table-body');
+                data.results.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-50 transition";
+                    tr.innerHTML = `
+            <td class="border px-6 py-3">${row.name}</td>
+            <td class="border px-6 py-3">${new Date(row.submit_time).toLocaleString()}</td>
+            <td class="border px-6 py-3">
+              <button onclick='showDetails(${JSON.stringify(row.answers)}, "${row.name}")'
+                class="text-blue-600 hover:text-blue-800 font-medium">查看详情</button>
+            </td>
+          `;
+                    tbody.appendChild(tr);
+                });
+            });
+
+        // 展示详情
+        function showDetails(answers, name) {
+            const container = document.getElementById('answer-detail');
+            container.innerHTML = ''; // 清空旧内容
+
+            // 显示考生姓名
+            container.textContent = `考生：${name}\n\n`;
+
+            // 遍历每道题，answers 是数组，每个元素有 question_id, content, answer
+            answers.forEach((item, index) => {
+                const answerText = Array.isArray(item.answer) ? item.answer.join(', ') : item.answer;
+
+                // 格式化纯文本内容
+                const textBlock = `(${item.question_id}) ${index + 1}、${item.content}\n\n作答：${answerText}`;
+
+                // 创建一个带边框的盒子显示该题内容
+                const box = document.createElement('div');
+                box.className = 'border border-gray-300 rounded-md p-4 bg-gray-50';
+                box.textContent = textBlock;
+
+                container.appendChild(box);
+                container.appendChild(document.createElement('br')); // 题目间留空行
+            });
+
+            // 显示模态框
+            document.getElementById('detail-modal').classList.remove('hidden');
+            document.getElementById('detail-modal').classList.add('flex');
+        }
+
+        function closeModal() {
+            document.getElementById('detail-modal').classList.add('hidden');
+            document.getElementById('detail-modal').classList.remove('flex');
+        }
+    </script>
+</body>
+
+</html>
