@@ -1,4 +1,78 @@
-/src/default_admin_password
-/src/__pycache__
-/src/*.db
-/src/openrouter_apikey
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Flask
+instance/
+.webassets-cache
+
+# Environment variables
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Database files (keep sample databases but exclude user data)
+src/users.db
+src/questions_papers.db
+
+# Logs
+*.log
+
+# Sensitive configuration files
+src/openrouter_apikey
+src/default_admin_password
+
+# Temporary files
+*.tmp
+*.temp
+
+# Testing
+.coverage
+.pytest_cache/
+.tox/
+
+# Documentation builds
+docs/_build/
+
+# Backup files
+*.bak
+*.backup

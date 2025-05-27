@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试数据管理 - 考试系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#10b981',
+                        danger: '#ef4444',
+                        warning: '#f59e0b'
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-database text-primary text-2xl mr-3"></i>
+                    <h1 class="text-xl font-semibold text-gray-900">测试数据管理</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/dashboard" class="text-gray-500 hover:text-gray-700 transition-colors">
+                        <i class="fas fa-arrow-left mr-2"></i>返回仪表板
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <!-- 页面标题和描述 -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">测试数据管理中心</h2>
+            <p class="text-gray-600">管理系统的测试数据，包括示例题目、用户账户等</p>
+        </div>
+
+        <!-- 数据库状态卡片 -->
+        <div class="bg-white rounded-lg shadow-sm border mb-8">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-chart-bar text-primary mr-2"></i>数据库状态
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="statusCards">
+                    <div class="bg-blue-50 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-blue-600" id="questionCount">-</div>
+                        <div class="text-sm text-blue-600">题目数量</div>
+                    </div>
+                    <div class="bg-green-50 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-green-600" id="userCount">-</div>
+                        <div class="text-sm text-green-600">用户数量</div>
+                    </div>
+                    <div class="bg-purple-50 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-purple-600" id="paperCount">-</div>
+                        <div class="text-sm text-purple-600">试卷数量</div>
+                    </div>
+                    <div class="bg-orange-50 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-orange-600" id="examCount">-</div>
+                        <div class="text-sm text-orange-600">考试数量</div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button onclick="loadDatabaseStatus()" class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors">
+                        <i class="fas fa-sync-alt mr-2"></i>刷新状态
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- 添加测试数据 -->
+            <div class="bg-white rounded-lg shadow-sm border">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-plus-circle text-secondary mr-2"></i>添加测试数据
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <!-- 添加示例题目 -->
+                        <div class="border rounded-lg p-4">
+                            <h4 class="font-medium text-gray-900 mb-2">示例题目数据</h4>
+                            <p class="text-sm text-gray-600 mb-3">添加包含各种题型的示例题目（单选、多选、填空、判断、简答、编程）</p>
+                            <button onclick="addSampleQuestions()" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+                                <i class="fas fa-question-circle mr-2"></i>添加示例题目
+                            </button>
+                        </div>
+
+                        <!-- 添加示例用户 -->
+                        <div class="border rounded-lg p-4">
+                            <h4 class="font-medium text-gray-900 mb-2">示例用户数据</h4>
+                            <p class="text-sm text-gray-600 mb-3">添加教师和学生测试账户（密码：123456）</p>
+                            <button onclick="addSampleUsers()" class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors">
+                                <i class="fas fa-users mr-2"></i>添加示例用户
+                            </button>
+                        </div>
+
+                        <!-- 生成随机数据 -->
+                        <div class="border rounded-lg p-4">
+                            <h4 class="font-medium text-gray-900 mb-2">生成随机数据</h4>
+                            <p class="text-sm text-gray-600 mb-3">自定义生成指定数量的随机测试数据</p>
+                            <div class="grid grid-cols-2 gap-3 mb-3">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">题目数量</label>
+                                    <input type="number" id="questionCount" value="10" min="1" max="100" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">用户数量</label>
+                                    <input type="number" id="userCount" value="5" min="1" max="50" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+                            </div>
+                            <button onclick="generateRandomData()" class="w-full bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors">
+                                <i class="fas fa-random mr-2"></i>生成随机数据
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据管理 -->
+            <div class="bg-white rounded-lg shadow-sm border">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-cogs text-warning mr-2"></i>数据管理
+                    </h3>
+
+                    <div class="space-y-4">
+                        <!-- 清空数据警告区域 -->
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div class="flex items-start">
+                                <i class="fas fa-exclamation-triangle text-red-500 mt-1 mr-3"></i>
+                                <div class="flex-1">
+                                    <h4 class="font-medium text-red-900 mb-2">危险操作</h4>
+                                    <p class="text-sm text-red-700 mb-3">以下操作将永久删除数据，请谨慎操作！</p>
+                                    
+                                    <div class="space-y-3">
+                                        <button onclick="confirmClearData()" class="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">
+                                            <i class="fas fa-trash mr-2"></i>清空所有测试数据
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 操作日志 -->
+                        <div class="border rounded-lg p-4">
+                            <h4 class="font-medium text-gray-900 mb-2">操作历史</h4>
+                            <div id="operationLog" class="text-sm text-gray-600 max-h-32 overflow-y-auto">
+                                <div class="text-gray-400">暂无操作记录</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认对话框 -->
+    <div id="confirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-2xl mr-3"></i>
+                    <h3 class="text-lg font-semibold text-gray-900">确认操作</h3>
+                </div>
+                <p class="text-gray-600 mb-6">您确定要清空所有测试数据吗？此操作不可撤销！</p>
+                <div class="flex space-x-3">
+                    <button onclick="clearAllData()" class="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">
+                        确认清空
+                    </button>
+                    <button onclick="closeConfirmModal()" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors">
+                        取消
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 消息提示 -->
+    <div id="messageToast" class="fixed top-4 right-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg border-l-4 border-blue-500 p-4 max-w-sm">
+            <div class="flex items-center">
+                <i id="messageIcon" class="fas fa-info-circle text-blue-500 mr-3"></i>
+                <div>
+                    <p id="messageText" class="text-gray-900 font-medium"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 页面加载时获取数据库状态
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDatabaseStatus();
+        });
+
+        // 加载数据库状态
+        function loadDatabaseStatus() {
+            fetch('/test-data/database-status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('questionCount').textContent = data.data.questions;
+                        document.getElementById('userCount').textContent = data.data.users;
+                        document.getElementById('paperCount').textContent = data.data.papers;
+                        document.getElementById('examCount').textContent = data.data.exams;
+                    } else {
+                        showMessage('获取状态失败：' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showMessage('获取状态失败', 'error');
+                });
+        }
+
+        // 添加示例题目
+        function addSampleQuestions() {
+            const button = event.target;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>添加中...';
+
+            fetch('/test-data/add-sample-questions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    loadDatabaseStatus();
+                    addToLog('添加示例题目：' + data.message);
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('操作失败', 'error');
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-question-circle mr-2"></i>添加示例题目';
+            });
+        }
+
+        // 添加示例用户
+        function addSampleUsers() {
+            const button = event.target;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>添加中...';
+
+            fetch('/test-data/add-sample-users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    loadDatabaseStatus();
+                    addToLog('添加示例用户：' + data.message);
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('操作失败', 'error');
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-users mr-2"></i>添加示例用户';
+            });
+        }        // 生成随机数据
+        function generateRandomData() {
+            const questionCountElement = document.getElementById('questionCount');
+            const userCountElement = document.getElementById('userCount');
+            
+            if (!questionCountElement || !userCountElement) {
+                showMessage('页面元素未找到', 'error');
+                return;
+            }
+            
+            const questionCount = parseInt(questionCountElement.value);
+            const userCount = parseInt(userCountElement.value);
+            
+            // 验证输入
+            if (isNaN(questionCount) || questionCount < 1 || questionCount > 100) {
+                showMessage('题目数量必须是1-100之间的数字', 'error');
+                return;
+            }
+            
+            if (isNaN(userCount) || userCount < 1 || userCount > 50) {
+                showMessage('用户数量必须是1-50之间的数字', 'error');
+                return;
+            }
+            
+            const button = event.target;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>生成中...';
+
+            fetch('/test-data/generate-random-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    questionCount: questionCount,
+                    userCount: userCount
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    loadDatabaseStatus();
+                    addToLog('生成随机数据：' + data.message);
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('操作失败：' + error.message, 'error');
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-random mr-2"></i>生成随机数据';
+            });
+        }
+
+        // 确认清空数据
+        function confirmClearData() {
+            document.getElementById('confirmModal').classList.remove('hidden');
+            document.getElementById('confirmModal').classList.add('flex');
+        }
+
+        // 关闭确认对话框
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+            document.getElementById('confirmModal').classList.remove('flex');
+        }
+
+        // 清空所有数据
+        function clearAllData() {
+            closeConfirmModal();
+            
+            fetch('/test-data/clear-all-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    loadDatabaseStatus();
+                    addToLog('清空数据：' + data.message);
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('操作失败', 'error');
+            });
+        }
+
+        // 显示消息提示
+        function showMessage(message, type = 'info') {
+            const toast = document.getElementById('messageToast');
+            const icon = document.getElementById('messageIcon');
+            const text = document.getElementById('messageText');
+            
+            // 设置图标和颜色
+            if (type === 'success') {
+                icon.className = 'fas fa-check-circle text-green-500 mr-3';
+                toast.firstElementChild.className = 'bg-white rounded-lg shadow-lg border-l-4 border-green-500 p-4 max-w-sm';
+            } else if (type === 'error') {
+                icon.className = 'fas fa-exclamation-circle text-red-500 mr-3';
+                toast.firstElementChild.className = 'bg-white rounded-lg shadow-lg border-l-4 border-red-500 p-4 max-w-sm';
+            } else {
+                icon.className = 'fas fa-info-circle text-blue-500 mr-3';
+                toast.firstElementChild.className = 'bg-white rounded-lg shadow-lg border-l-4 border-blue-500 p-4 max-w-sm';
+            }
+            
+            text.textContent = message;
+            toast.classList.remove('hidden');
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // 添加到操作日志
+        function addToLog(message) {
+            const log = document.getElementById('operationLog');
+            const time = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'text-xs text-gray-500 mb-1';
+            logEntry.textContent = `[${time}] ${message}`;
+            
+            if (log.firstElementChild && log.firstElementChild.textContent === '暂无操作记录') {
+                log.innerHTML = '';
+            }
+            
+            log.insertBefore(logEntry, log.firstChild);
+            
+            // 限制日志条目数量
+            const entries = log.children;
+            if (entries.length > 10) {
+                log.removeChild(entries[entries.length - 1]);
+            }
+        }
+    </script>
+</body>
+</html>
