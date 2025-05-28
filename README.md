@@ -124,7 +124,7 @@ python app.py
 - **[用户使用指南](doc/USER_GUIDE.md)** - 完整使用教程  
 - **[部署指南](doc/DEPLOYMENT.md)** - 生产环境部署
 - **[项目总结](doc/PROJECT_SUMMARY.md)** - 项目概述和架构
-- **[完成报告](COMPLETION_REPORT.md)** - 开发完成状态
+- **[完成报告](doc/COMPLETION_REPORT.md)** - 开发完成状态
 
 ## 🛠️ 开发信息
 
