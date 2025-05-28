@@ -53,7 +53,7 @@
 - **友好提示**：详细的成功/错误消息
 - **直观操作**：卡片式布局，清晰的功能分区
 
-更多详细信息：[测试数据管理功能文档](TEST_DATA_MANAGEMENT.md) | [用户使用指南](USER_GUIDE.md)
+更多详细信息：[测试数据管理功能文档](doc/TEST_DATA_MANAGEMENT.md) | [用户使用指南](doc/USER_GUIDE.md)
 
 ## ⚙️ 技术栈
 
@@ -120,10 +120,10 @@ python app.py
 
 ## 📚 文档导航
 
-- **[测试数据管理功能](TEST_DATA_MANAGEMENT.md)** - 详细功能说明
-- **[用户使用指南](USER_GUIDE.md)** - 完整使用教程  
-- **[部署指南](DEPLOYMENT.md)** - 生产环境部署
-- **[项目总结](PROJECT_SUMMARY.md)** - 项目概述和架构
+- **[测试数据管理功能](doc/TEST_DATA_MANAGEMENT.md)** - 详细功能说明
+- **[用户使用指南](doc/USER_GUIDE.md)** - 完整使用教程  
+- **[部署指南](doc/DEPLOYMENT.md)** - 生产环境部署
+- **[项目总结](doc/PROJECT_SUMMARY.md)** - 项目概述和架构
 - **[完成报告](COMPLETION_REPORT.md)** - 开发完成状态
 
 ## 🛠️ 开发信息
