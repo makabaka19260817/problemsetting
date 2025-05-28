@@ -2,11 +2,12 @@ import threading
 import time
 import sys
 import os
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect
 
-app = Flask(__name__, template_folder='.')
-ADMIN_PASS_PATH = './src/default_admin_password'
-APIKEY_PATH = './src/openrouter_apikey'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ADMIN_PASS_PATH = os.path.join(BASE_DIR, '../src/default_admin_password')
+APIKEY_PATH = os.path.join(BASE_DIR, '../src/openrouter_apikey')
+app = Flask(__name__, template_folder=BASE_DIR)
 
 def delayed_exit(seconds=2):
     def _exit():
@@ -14,6 +15,10 @@ def delayed_exit(seconds=2):
         print("正在退出后端服务...")
         os._exit(0)  # 或使用 sys.exit(0)
     threading.Thread(target=_exit, daemon=True).start()
+
+@app.route('/')
+def index():
+    return redirect('/setup')
 
 @app.route('/setup', methods=['GET', 'POST'])
 def setup():
@@ -60,4 +65,5 @@ def setup():
 
 
 if __name__ == '__main__':
+    print(BASE_DIR)
     app.run(debug=True)

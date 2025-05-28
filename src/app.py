@@ -6,9 +6,10 @@ from dashboard_admin import dashboard_admin_bp
 from dashboard_teacher import dashboard_teacher_bp
 from exam_handler import exam_handler_bp
 from test_data_handler import test_data_bp
+import os
 
-
-app = Flask(__name__, template_folder='../html')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+app = Flask(__name__, template_folder=os.path.join(BASE_DIR, '../html'))
 app.secret_key = 'supersecretkey'
 
 @app.route('/')
@@ -75,6 +76,8 @@ def logout():
     return redirect(url_for('login_register_page'))
 
 if __name__ == '__main__':
+    print(os.path.join(BASE_DIR, '../html'))
+    print(123123)
     init_db()
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(dashboard_admin_bp)

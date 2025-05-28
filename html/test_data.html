@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,6 +22,7 @@
     </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
+
 <body class="bg-gray-50 min-h-screen">
     <!-- 导航栏 -->
     <nav class="bg-white shadow-sm border-b">
@@ -86,7 +88,7 @@
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">
                         <i class="fas fa-plus-circle text-secondary mr-2"></i>添加测试数据
                     </h3>
-                    
+
                     <div class="space-y-4">
                         <!-- 添加示例题目 -->
                         <div class="border rounded-lg p-4">
@@ -113,11 +115,11 @@
                             <div class="grid grid-cols-2 gap-3 mb-3">
                                 <div>
                                     <label class="block text-xs text-gray-500 mb-1">题目数量</label>
-                                    <input type="number" id="questionCount" value="10" min="1" max="100" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                    <input type="number" id="randQuestionCount" value="10" min="1" max="100" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                                 </div>
                                 <div>
                                     <label class="block text-xs text-gray-500 mb-1">用户数量</label>
-                                    <input type="number" id="userCount" value="5" min="1" max="50" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                    <input type="number" id="randUserCount" value="5" min="1" max="50" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                                 </div>
                             </div>
                             <button onclick="generateRandomData()" class="w-full bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors">
@@ -143,7 +145,7 @@
                                 <div class="flex-1">
                                     <h4 class="font-medium text-red-900 mb-2">危险操作</h4>
                                     <p class="text-sm text-red-700 mb-3">以下操作将永久删除数据，请谨慎操作！</p>
-                                    
+
                                     <div class="space-y-3">
                                         <button onclick="confirmClearData()" class="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">
                                             <i class="fas fa-trash mr-2"></i>清空所有测试数据
@@ -232,29 +234,29 @@
             button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>添加中...';
 
             fetch('/test-data/add-sample-questions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showMessage(data.message, 'success');
-                    loadDatabaseStatus();
-                    addToLog('添加示例题目：' + data.message);
-                } else {
-                    showMessage(data.message, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showMessage('操作失败', 'error');
-            })
-            .finally(() => {
-                button.disabled = false;
-                button.innerHTML = '<i class="fas fa-question-circle mr-2"></i>添加示例题目';
-            });
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage(data.message, 'success');
+                        loadDatabaseStatus();
+                        addToLog('添加示例题目：' + data.message);
+                    } else {
+                        showMessage(data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showMessage('操作失败', 'error');
+                })
+                .finally(() => {
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-question-circle mr-2"></i>添加示例题目';
+                });
         }
 
         // 添加示例用户
@@ -264,85 +266,87 @@
             button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>添加中...';
 
             fetch('/test-data/add-sample-users', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showMessage(data.message, 'success');
-                    loadDatabaseStatus();
-                    addToLog('添加示例用户：' + data.message);
-                } else {
-                    showMessage(data.message, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showMessage('操作失败', 'error');
-            })
-            .finally(() => {
-                button.disabled = false;
-                button.innerHTML = '<i class="fas fa-users mr-2"></i>添加示例用户';
-            });
-        }        // 生成随机数据
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage(data.message, 'success');
+                        loadDatabaseStatus();
+                        addToLog('添加示例用户：' + data.message);
+                    } else {
+                        showMessage(data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showMessage('操作失败', 'error');
+                })
+                .finally(() => {
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-users mr-2"></i>添加示例用户';
+                });
+        } // 生成随机数据
         function generateRandomData() {
-            const questionCountElement = document.getElementById('questionCount');
-            const userCountElement = document.getElementById('userCount');
-            
+            const questionCountElement = document.getElementById('randQuestionCount');
+            const userCountElement = document.getElementById('randUserCount');
+
             if (!questionCountElement || !userCountElement) {
                 showMessage('页面元素未找到', 'error');
                 return;
             }
-            
+
             const questionCount = parseInt(questionCountElement.value);
             const userCount = parseInt(userCountElement.value);
-            
+            console.log(questionCountElement, userCountElement);
+            console.log(questionCount, userCount);
+
             // 验证输入
             if (isNaN(questionCount) || questionCount < 1 || questionCount > 100) {
                 showMessage('题目数量必须是1-100之间的数字', 'error');
                 return;
             }
-            
+
             if (isNaN(userCount) || userCount < 1 || userCount > 50) {
                 showMessage('用户数量必须是1-50之间的数字', 'error');
                 return;
             }
-            
+
             const button = event.target;
             button.disabled = true;
             button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>生成中...';
 
             fetch('/test-data/generate-random-data', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    questionCount: questionCount,
-                    userCount: userCount
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        questionCount: questionCount,
+                        userCount: userCount
+                    })
                 })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showMessage(data.message, 'success');
-                    loadDatabaseStatus();
-                    addToLog('生成随机数据：' + data.message);
-                } else {
-                    showMessage(data.message, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showMessage('操作失败：' + error.message, 'error');
-            })
-            .finally(() => {
-                button.disabled = false;
-                button.innerHTML = '<i class="fas fa-random mr-2"></i>生成随机数据';
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage(data.message, 'success');
+                        loadDatabaseStatus();
+                        addToLog('生成随机数据：' + data.message);
+                    } else {
+                        showMessage(data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showMessage('操作失败：' + error.message, 'error');
+                })
+                .finally(() => {
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-random mr-2"></i>生成随机数据';
+                });
         }
 
         // 确认清空数据
@@ -360,27 +364,27 @@
         // 清空所有数据
         function clearAllData() {
             closeConfirmModal();
-            
+
             fetch('/test-data/clear-all-data', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showMessage(data.message, 'success');
-                    loadDatabaseStatus();
-                    addToLog('清空数据：' + data.message);
-                } else {
-                    showMessage(data.message, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showMessage('操作失败', 'error');
-            });
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage(data.message, 'success');
+                        loadDatabaseStatus();
+                        addToLog('清空数据：' + data.message);
+                    } else {
+                        showMessage(data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showMessage('操作失败', 'error');
+                });
         }
 
         // 显示消息提示
@@ -388,7 +392,7 @@
             const toast = document.getElementById('messageToast');
             const icon = document.getElementById('messageIcon');
             const text = document.getElementById('messageText');
-            
+
             // 设置图标和颜色
             if (type === 'success') {
                 icon.className = 'fas fa-check-circle text-green-500 mr-3';
@@ -400,10 +404,10 @@
                 icon.className = 'fas fa-info-circle text-blue-500 mr-3';
                 toast.firstElementChild.className = 'bg-white rounded-lg shadow-lg border-l-4 border-blue-500 p-4 max-w-sm';
             }
-            
+
             text.textContent = message;
             toast.classList.remove('hidden');
-            
+
             // 3秒后自动隐藏
             setTimeout(() => {
                 toast.classList.add('hidden');
@@ -417,13 +421,13 @@
             const logEntry = document.createElement('div');
             logEntry.className = 'text-xs text-gray-500 mb-1';
             logEntry.textContent = `[${time}] ${message}`;
-            
+
             if (log.firstElementChild && log.firstElementChild.textContent === '暂无操作记录') {
                 log.innerHTML = '';
             }
-            
+
             log.insertBefore(logEntry, log.firstChild);
-            
+
             // 限制日志条目数量
             const entries = log.children;
             if (entries.length > 10) {
@@ -432,4 +436,5 @@
         }
     </script>
 </body>
+
 </html>

@@ -1,7 +1,7 @@
 # src/test_data_handler.py
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for, session
 from db_problems import add_question, get_questions, init_db
-from db_users import create_user
+from db_users import create_user, read_admin_password, generate_password_hash
 import sqlite3
 import os
 
@@ -29,49 +29,49 @@ def add_sample_questions():
     # 示例题目数据
     sample_questions = [
         {
-            'qtype': '单选题',
+            'qtype': 'single_choice',
             'content': '下列哪个是Python的数据类型？\nA. int\nB. string\nC. float\nD. 以上都是',
             'difficulty': 1,
             'answer': 'D'
         },
         {
-            'qtype': '单选题',
+            'qtype': 'single_choice',
             'content': 'Flask是什么？\nA. 数据库\nB. Web框架\nC. 编程语言\nD. 操作系统',
             'difficulty': 2,
             'answer': 'B'
         },
         {
-            'qtype': '多选题',
+            'qtype': 'multiple_choice',
             'content': '以下哪些是常见的HTTP状态码？\nA. 200\nB. 404\nC. 500\nD. 999',
             'difficulty': 2,
             'answer': 'A,B,C'
         },
         {
-            'qtype': '填空题',
+            'qtype': 'essay',
             'content': 'Python中用于创建列表的符号是____，用于创建字典的符号是____。',
             'difficulty': 1,
             'answer': '[];{}'
         },
         {
-            'qtype': '判断题',
+            'qtype': 'true_false',
             'content': 'Python是一种解释型编程语言。',
             'difficulty': 1,
             'answer': '正确'
         },
         {
-            'qtype': '简答题',
+            'qtype': 'essay',
             'content': '请简述MVC设计模式的基本概念和优点。',
             'difficulty': 3,
             'answer': 'MVC是Model-View-Controller的缩写，是一种软件设计模式。Model负责数据处理，View负责用户界面，Controller负责业务逻辑。优点包括：代码结构清晰、易于维护、支持多视图、便于测试等。'
         },
         {
-            'qtype': '编程题',
+            'qtype': 'essay',
             'content': '编写一个Python函数，计算斐波那契数列的第n项。\n\n要求：\n1. 函数名为fibonacci\n2. 参数为正整数n\n3. 返回第n项的值',
             'difficulty': 3,
             'answer': 'def fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)'
         },
         {
-            'qtype': '单选题',
+            'qtype': 'single_choice',
             'content': '在关系数据库中，下列哪个操作属于DML？\nA. CREATE TABLE\nB. DROP TABLE\nC. INSERT\nD. ALTER TABLE',
             'difficulty': 2,
             'answer': 'C'
@@ -153,6 +153,12 @@ def clear_all_data():
                 cursor.execute('DELETE FROM users WHERE id != ?', (current_user_id,))
             else:
                 cursor.execute('DELETE FROM users')
+            admin_password = read_admin_password()
+            password_hash = generate_password_hash(admin_password)
+            cursor.execute('''
+                INSERT INTO users (username, email, password_hash, is_admin)
+                VALUES (?, ?, ?, ?)
+            ''', ('admin', 'admin@example.com', password_hash, 1))
             conn.commit()
             conn.close()
         
@@ -188,7 +194,7 @@ def generate_random_data():
             return jsonify({'success': False, 'message': '用户数量必须在1-50之间'})
         
         # 生成随机题目
-        question_types = ['单选题', '多选题', '填空题', '判断题', '简答题']
+        question_types = ['single_choice', 'multiple_choice', 'true_false', 'essay']
         difficulties = [1, 2, 3]
         
         for i in range(question_count):

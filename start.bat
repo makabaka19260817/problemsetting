@@ -1,5 +1,6 @@
 @echo off
+echo 配置考试系统环境...
+python ./scripts/setup.py
 echo 启动考试系统...
-cd src
-python app.py
+python ./src/app.py
 pause

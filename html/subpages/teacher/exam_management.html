@@ -250,6 +250,7 @@
             if (result.success) {
                 alert(`考试已创建，标识符为 ${result.identifier}`);
                 closeExamModal();
+                location.reload();
             } else {
                 alert('创建失败：' + (result.error || '未知错误'));
             }
