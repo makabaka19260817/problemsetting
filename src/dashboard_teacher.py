@@ -229,7 +229,7 @@ def all_questions():
     questions = db_problems.get_all_questions()
     return jsonify(questions)
 
-@dashboard_teacher_bp.route('/paper', methods=['POST'])
+@dashboard_teacher_bp.route('/paper/save', methods=['POST'])
 @teacher_required
 def save_paper_api():
     data = request.get_json()
@@ -306,7 +306,7 @@ def question_detail_api(q_id):
         return jsonify({'error': '题目不存在'}), 404
     return jsonify(q)
 
-@dashboard_teacher_bp.route('/question', methods=['POST'])
+@dashboard_teacher_bp.route('/question/add', methods=['POST'])
 @teacher_required
 def add_question_api():
     data = request.json
@@ -318,7 +318,7 @@ def add_question_api():
     )
     return jsonify({'message': '添加成功'}), 201
 
-@dashboard_teacher_bp.route('/question/<int:q_id>', methods=['PUT'])
+@dashboard_teacher_bp.route('/question/edit/<int:q_id>', methods=['PUT'])
 @teacher_required
 def edit_question_api(q_id):
     data = request.json
@@ -330,7 +330,7 @@ def edit_question_api(q_id):
     )
     return jsonify({'message': '修改成功'})
 
-@dashboard_teacher_bp.route('/question/<int:q_id>', methods=['DELETE'])
+@dashboard_teacher_bp.route('/question/delete/<int:q_id>', methods=['DELETE'])
 @teacher_required
 def delete_question_api(q_id):
     db_problems.delete_question(q_id)
