@@ -17,6 +17,7 @@ def student_required(f):
     return wrapper
 
 @exam_handler_bp.route('/<string:identifier>', methods=['GET'])
+@student_required
 def exam_page(identifier):
     questions = get_exam_questions_by_identifier(identifier)
     if questions is None:
@@ -25,6 +26,7 @@ def exam_page(identifier):
     return render_template('exam_page.html', identifier=identifier, questions=questions)
 
 @exam_handler_bp.route('/<string:identifier>/submit', methods=['POST'])
+@student_required
 def submit_exam(identifier):
     try:
         data = request.get_json()

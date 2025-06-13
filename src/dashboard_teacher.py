@@ -98,6 +98,17 @@ def ai_generate():
 def exam_management():
     return render_template('subpages/teacher/exam_management.html', username=session['username'])
 
+@dashboard_teacher_bp.route('/students')
+@teacher_required
+def get_students_list():
+    """获取所有学生用户列表"""
+    try:
+        from db_users import get_users_by_role
+        students = get_users_by_role('student')
+        return jsonify({'success': True, 'students': students})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @dashboard_teacher_bp.route('/exam_management/create', methods=['POST'])
 @teacher_required
 def create_exam():
@@ -107,12 +118,39 @@ def create_exam():
     start_time = data.get('start_time')
     end_time = data.get('end_time')
     description = data.get('description', '')
+    student_permissions = data.get('student_permissions', [])
 
     if not all([paper_id, exam_title, start_time, end_time]):
         return jsonify({'success': False, 'error': '缺少必要字段'})
 
     try:
         identifier = db_problems.create_exam(exam_title, paper_id, start_time, end_time, description)
+        
+        # 处理学生权限设置
+        if student_permissions:
+            for permission in student_permissions:
+                if permission['student_name'] == '__ALL_STUDENTS__':
+                    # 为所有学生设置相同的最大参加次数
+                    from db_users import get_users_by_role
+                    all_students = get_users_by_role('student')
+                    max_attempts = permission.get('max_attempts', 1)
+                    
+                    for student in all_students:
+                        db_exam.set_exam_permission(
+                            identifier,
+                            student['username'],
+                            True,
+                            max_attempts
+                        )
+                else:
+                    # 为指定学生设置权限
+                    db_exam.set_exam_permission(
+                        identifier,
+                        permission['student_name'],
+                        permission.get('can_participate', True),
+                        permission.get('max_attempts', 1)
+                    )
+        
         return jsonify({'success': True, 'identifier': identifier})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
@@ -297,3 +335,88 @@ def edit_question_api(q_id):
 def delete_question_api(q_id):
     db_problems.delete_question(q_id)
     return jsonify({'message': '删除成功'})
+
+@dashboard_teacher_bp.route('/exam_management/<string:exam_identifier>/grade', methods=['POST'])
+@teacher_required
+def grade_exam_answers(exam_identifier):
+    """评分功能"""
+    try:
+        data = request.get_json()
+        student_name = data.get('student_name')
+        grades = data.get('grades', [])  # [{'question_id': 1, 'score': 5.0}, ...]
+        
+        if not student_name or not grades:
+            return jsonify({'success': False, 'error': '缺少必要参数'})
+        
+        teacher_name = session['username']
+        
+        # 保存每道题的评分
+        for grade in grades:
+            db_exam.grade_question(
+                exam_identifier, 
+                student_name, 
+                grade['question_id'], 
+                grade['score'], 
+                teacher_name
+            )
+        
+        return jsonify({'success': True, 'message': '评分保存成功'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@dashboard_teacher_bp.route('/exam_management/<string:exam_identifier>/auto_grade', methods=['POST'])
+@teacher_required
+def auto_grade_exam(exam_identifier):
+    """自动评判客观题"""
+    try:
+        graded_count = db_exam.auto_grade_objective_questions(exam_identifier)
+        return jsonify({'success': True, 'graded_count': graded_count})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@dashboard_teacher_bp.route('/exam_management/<string:exam_identifier>/export')
+@teacher_required
+def export_exam_results(exam_identifier):
+    """导出考试成绩"""
+    try:
+        from flask import make_response
+        import csv
+        import io
+        
+        # 获取考试结果
+        results_response = view_exam_results(exam_identifier)
+        if hasattr(results_response, 'json') and results_response.json.get('success'):
+            results = results_response.json['results']
+        else:
+            return "导出失败：无法获取考试数据", 500
+        
+        # 创建CSV内容
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # 写入标题行
+        writer.writerow(['学生姓名', '提交时间', '总得分', '满分', '得分率(%)', '题目数'])
+        
+        # 写入数据行
+        for result in results:
+            total_score = sum(ans.get('student_score', 0) for ans in result['answers'])
+            max_score = sum(ans['score'] for ans in result['answers'])
+            percentage = round((total_score / max_score) * 100, 2) if max_score > 0 else 0
+            
+            writer.writerow([
+                result['name'],
+                result['submit_time'],
+                total_score,
+                max_score,
+                percentage,
+                len(result['answers'])
+            ])
+        
+        # 创建响应
+        response = make_response(output.getvalue())
+        response.headers['Content-Type'] = 'text/csv; charset=utf-8-sig'
+        response.headers['Content-Disposition'] = f'attachment; filename=exam_results_{exam_identifier}.csv'
+        
+        return response
+    except Exception as e:
+        return f"导出失败：{str(e)}", 500

@@ -44,9 +44,7 @@
                                 class="form-checkbox text-blue-600 focus:ring-blue-500" />
                             <span class="ml-2 text-gray-800 font-semibold">{{ opt }}</span>
                         </label> {% endfor %}
-                    </div>
-
-                    {% elif q.qtype == 'true_false' %}
+                    </div>                    {% elif q.qtype == 'true_false' %}
                     <div class="flex gap-10">
                         <label class="inline-flex items-center cursor-pointer">
                             <input type="radio" name="q{{ q.id }}" value="True" required
@@ -60,8 +58,14 @@
                         </label>
                     </div>
 
+                    {% elif q.qtype == 'fill_blank' %}
+                    <input type="text" name="q{{ q.id }}" class="w-full border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="请输入答案..." required />
+
+                    {% elif q.qtype == 'programming' %}
+                    <textarea name="q{{ q.id }}" rows="8" class="w-full border border-gray-300 rounded-md px-4 py-3 resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition font-mono text-sm" placeholder="请输入代码..." required></textarea>
+
                     {% elif q.qtype == 'essay' %}
-                    <textarea name="q{{ q.id }}" rows="5" class="w-full border border-gray-300 rounded-md px-4 py-3 resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" required></textarea> {% else %}
+                    <textarea name="q{{ q.id }}" rows="5" class="w-full border border-gray-300 rounded-md px-4 py-3 resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" required></textarea>{% else %}
                     <p class="text-red-500 font-semibold">未知题型</p>
                     {% endif %}
                 </div>
