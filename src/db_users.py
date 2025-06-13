@@ -88,6 +88,16 @@ def get_all_users():
     ]
     return users
 
+def get_users_by_role(role):
+    """根据角色获取用户列表"""
+    conn = get_db()
+    cur = conn.execute('SELECT username, email, role FROM users WHERE role = ? ORDER BY username ASC', (role,))
+    users = [
+        {'username': row['username'], 'email': row['email'], 'role': row['role']}
+        for row in cur.fetchall()
+    ]
+    return users
+
 def delete_user(username):
     if username == 'admin':
         return False, '不能删除默认管理员账户'

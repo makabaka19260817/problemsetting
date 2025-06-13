@@ -3,52 +3,426 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>考试结果</title>
+    <title>考试结果与评分</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="bg-gray-100 min-h-screen p-6">
-    <div class="max-w-6xl mx-auto bg-white p-8 shadow rounded-lg">
-        <h1 class="text-3xl font-bold mb-6 text-gray-800">考试结果</h1>
-
-        <div class="overflow-x-auto">
-            <table class="min-w-full border border-gray-300 rounded-lg overflow-hidden">
-                <thead class="bg-gray-200 text-gray-700 text-sm uppercase">
-                    <tr>
-                        <th class="border px-6 py-3 text-left">姓名</th>
-                        <th class="border px-6 py-3 text-left">提交时间</th>
-                        <th class="border px-6 py-3 text-left">操作</th>
-                    </tr>
-                </thead>
-                <tbody id="result-table-body" class="bg-white divide-y divide-gray-200">
-                    <!-- 动态填充 -->
-                </tbody>
-            </table>
+    <!-- 顶部导航 -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <a href="/teacher/exam_management" class="text-blue-600 hover:underline font-medium text-lg">
+                ← 返回考试管理
+            </a>
         </div>
+        <form action="{{ url_for('logout') }}" method="post">
+            <button type="submit" class="text-red-600 hover:underline font-medium text-lg">
+                注销并返回登录
+            </button>
+        </form>
     </div>
 
-    <!-- 模态框 -->
-    <div id="detail-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-3xl max-h-[80vh] overflow-y-auto relative">
-            <h2 class="text-xl font-semibold mb-4 text-gray-800">作答详情</h2>
-            <div id="answer-detail" class="space-y-4 text-gray-900 font-mono whitespace-pre-wrap"></div>
-            <div class="mt-6 text-right">
-                <button onclick="closeModal()" class="px-4 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-lg">关闭</button>
+    <div class="max-w-7xl mx-auto">
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">考试结果与评分</h1>
+                    <p class="text-gray-600">考试标识: {{ exam_identifier }}</p>
+                </div>
+                <div class="flex space-x-4">
+                    <button onclick="autoGradeObjective()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                        自动评判客观题
+                    </button>
+                    <button onclick="exportResults()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                        导出成绩
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计信息 -->
+        <div id="stats-section" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <!-- 动态加载 -->
+        </div>
+
+        <!-- 学生列表 -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">学生答卷列表</h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">学生姓名</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">提交时间</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">总得分</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">评分进度</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="result-table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- 动态填充 -->
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
+    <!-- 答卷详情和评分模态框 -->
+    <div id="grading-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-6xl max-h-[90vh] overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h2 class="text-xl font-semibold text-gray-800" id="modal-title">答卷详情与评分</h2>
+                <button onclick="closeGradingModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="p-6 max-h-[calc(90vh-120px)] overflow-y-auto">
+                <div id="grading-content">
+                    <!-- 动态加载答卷内容 -->
+                </div>
+            </div>
+            
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-4">
+                <button onclick="saveAllGrades()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    保存所有评分
+                </button>
+                <button onclick="closeGradingModal()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition">
+                    关闭
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
-        const examIdentifier = window.location.pathname.split('/')[3]; // 例如 /exam_management/<identifier>/results_page
+        const examIdentifier = '{{ exam_identifier }}';
+        let currentStudentData = null;
 
-        // 获取考试作答信息
-        fetch(`/teacher/exam_management/${examIdentifier}/results`)
-            .then(res => res.json())
-            .then(data => {
-                if (!data.success) {
-                    alert('获取考试结果失败');
+        // 页面加载时获取考试结果
+        document.addEventListener('DOMContentLoaded', function() {
+            loadExamResults();
+        });
+
+        async function loadExamResults() {
+            try {
+                const response = await fetch(`/teacher/exam_management/${examIdentifier}/results`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data.results);
+                    updateStats(data.results);
+                } else {
+                    alert('获取考试结果失败: ' + data.error);
+                }
+            } catch (error) {
+                console.error('加载考试结果失败:', error);
+                alert('加载考试结果失败');
+            }
+        }
+
+        function displayResults(results) {
+            const tbody = document.getElementById('result-table-body');
+            tbody.innerHTML = '';
+
+            results.forEach(result => {
+                const totalScore = result.answers.reduce((sum, ans) => sum + (ans.student_score || 0), 0);
+                const maxScore = result.answers.reduce((sum, ans) => sum + ans.score, 0);
+                const gradedCount = result.answers.filter(ans => ans.is_graded).length;
+                const totalQuestions = result.answers.length;
+                
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${result.name}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${new Date(result.submit_time).toLocaleString()}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${totalScore}/${maxScore}</div>
+                        <div class="text-sm text-gray-500">${maxScore > 0 ? Math.round((totalScore/maxScore)*100) : 0}%</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: ${(gradedCount/totalQuestions)*100}%"></div>
+                            </div>
+                            <span class="text-sm text-gray-600">${gradedCount}/${totalQuestions}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        <button onclick="viewAndGrade('${result.name}')" class="text-blue-600 hover:text-blue-900">
+                            查看评分
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateStats(results) {
+            const container = document.getElementById('stats-section');
+            
+            const totalStudents = results.length;
+            const totalAnswers = results.reduce((sum, r) => sum + r.answers.length, 0);
+            const gradedAnswers = results.reduce((sum, r) => sum + r.answers.filter(a => a.is_graded).length, 0);
+            const avgScore = results.length > 0 ? 
+                results.reduce((sum, r) => {
+                    const studentTotal = r.answers.reduce((s, a) => s + (a.student_score || 0), 0);
+                    const studentMax = r.answers.reduce((s, a) => s + a.score, 0);
+                    return sum + (studentMax > 0 ? (studentTotal/studentMax) : 0);
+                }, 0) / results.length * 100 : 0;
+
+            container.innerHTML = `
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-blue-100 rounded-lg">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-900">${totalStudents}</h3>
+                            <p class="text-sm text-gray-500">参考学生数</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-green-100 rounded-lg">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-900">${Math.round((gradedAnswers/totalAnswers)*100) || 0}%</h3>
+                            <p class="text-sm text-gray-500">评分进度</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-yellow-100 rounded-lg">
+                            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-900">${Math.round(avgScore)}%</h3>
+                            <p class="text-sm text-gray-500">平均得分率</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-purple-100 rounded-lg">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-900">${gradedAnswers}</h3>
+                            <p class="text-sm text-gray-500">已评分题目</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function viewAndGrade(studentName) {
+            try {
+                const response = await fetch(`/teacher/exam_management/${examIdentifier}/results`);
+                const data = await response.json();
+                
+                const student = data.results.find(r => r.name === studentName);
+                if (!student) {
+                    alert('找不到学生数据');
                     return;
+                }
+                
+                currentStudentData = student;
+                displayGradingModal(student);
+            } catch (error) {
+                console.error('加载学生数据失败:', error);
+                alert('加载学生数据失败');
+            }
+        }
+
+        function displayGradingModal(student) {
+            document.getElementById('modal-title').textContent = `${student.name} - 答卷详情与评分`;
+            
+            const content = document.getElementById('grading-content');
+            content.innerHTML = '';
+
+            student.answers.forEach((answer, index) => {
+                const answerDiv = document.createElement('div');
+                answerDiv.className = 'mb-6 p-4 border border-gray-200 rounded-lg';
+                
+                const isObjective = ['single_choice', 'multiple_choice', 'true_false'].includes(answer.question_type);
+                const isCorrect = answer.student_score === answer.score;
+                
+                answerDiv.innerHTML = `
+                    <div class="mb-4">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-2">
+                            第${index + 1}题 (${answer.score}分)
+                            ${isObjective ? '<span class="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">客观题</span>' : '<span class="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded">主观题</span>'}
+                        </h4>
+                        <p class="text-gray-700 mb-3">${answer.content}</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">学生答案:</label>
+                            <div class="p-3 bg-blue-50 rounded border">
+                                <span class="font-mono">${formatAnswer(answer.answer)}</span>
+                            </div>
+                        </div>
+                        ${isObjective ? `
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">正确答案:</label>
+                            <div class="p-3 bg-green-50 rounded border">
+                                <span class="font-mono">${formatAnswer(answer.correct_answer)}</span>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">得分:</label>
+                            <input type="number" 
+                                   value="${answer.student_score || 0}" 
+                                   min="0" 
+                                   max="${answer.score}" 
+                                   step="0.5"
+                                   class="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   onchange="updateScore(${answer.question_id}, this.value)"
+                                   ${isObjective ? 'readonly' : ''}>
+                            <span class="text-sm text-gray-500 ml-2">/ ${answer.score}</span>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            ${answer.is_graded ? 
+                                '<span class="text-green-600 text-sm">✓ 已评分</span>' : 
+                                '<span class="text-yellow-600 text-sm">○ 待评分</span>'
+                            }
+                        </div>
+                        
+                        ${isObjective && isCorrect ? 
+                            '<span class="text-green-600 text-sm font-medium">✓ 回答正确</span>' : 
+                            (isObjective ? '<span class="text-red-600 text-sm font-medium">✗ 回答错误</span>' : '')
+                        }
+                    </div>
+                `;
+                
+                content.appendChild(answerDiv);
+            });
+
+            document.getElementById('grading-modal').classList.remove('hidden');
+            document.getElementById('grading-modal').classList.add('flex');
+        }
+
+        function formatAnswer(answer) {
+            if (typeof answer === 'string') {
+                return answer;
+            } else if (Array.isArray(answer)) {
+                return answer.join(', ');
+            } else if (typeof answer === 'boolean') {
+                return answer ? '正确' : '错误';
+            }
+            return String(answer);
+        }
+
+        function updateScore(questionId, score) {
+            if (!currentStudentData) return;
+            
+            const answer = currentStudentData.answers.find(a => a.question_id === questionId);
+            if (answer) {
+                answer.student_score = parseFloat(score);
+                answer.is_graded = true;
+            }
+        }
+
+        async function saveAllGrades() {
+            if (!currentStudentData) return;
+            
+            try {
+                const grades = currentStudentData.answers.map(answer => ({
+                    question_id: answer.question_id,
+                    score: answer.student_score || 0
+                }));
+
+                const response = await fetch(`/teacher/exam_management/${examIdentifier}/grade`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        student_name: currentStudentData.name,
+                        grades: grades
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('评分保存成功!');
+                    closeGradingModal();
+                    loadExamResults(); // 重新加载数据
+                } else {
+                    alert('保存失败: ' + result.error);
+                }
+            } catch (error) {
+                console.error('保存评分失败:', error);
+                alert('保存评分失败');
+            }
+        }
+
+        async function autoGradeObjective() {
+            if (!confirm('确定要自动评判所有客观题吗？这将覆盖已有的客观题评分。')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/teacher/exam_management/${examIdentifier}/auto_grade`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert(`自动评判完成！共评判了 ${result.graded_count} 道题目。`);
+                    loadExamResults(); // 重新加载数据
+                } else {
+                    alert('自动评判失败: ' + result.error);
+                }
+            } catch (error) {
+                console.error('自动评判失败:', error);
+                alert('自动评判失败');
+            }
+        }
+
+        function exportResults() {
+            // 简单的CSV导出功能
+            window.open(`/teacher/exam_management/${examIdentifier}/export`, '_blank');
+        }
+
+        function closeGradingModal() {
+            document.getElementById('grading-modal').classList.add('hidden');
+            document.getElementById('grading-modal').classList.remove('flex');
+            currentStudentData = null;
+        }
+    </script>
+</body>
+
+</html>
                 }
 
                 const tbody = document.getElementById('result-table-body');

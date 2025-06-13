@@ -79,11 +79,48 @@
                 <div>
                     <label for="end-time" class="block font-medium mb-1">结束时间</label>
                     <input id="end-time" name="end_time" type="datetime-local" required class="border border-gray-300 rounded px-3 py-2 w-full" />
-                </div>
-
-                <div>
+                </div>                <div>
                     <label for="exam-desc" class="block font-medium mb-1">考试说明</label>
                     <textarea id="exam-desc" name="description" rows="3" class="border border-gray-300 rounded px-3 py-2 w-full"></textarea>
+                </div>                <!-- 学生权限设置 -->
+                <div>
+                    <label class="block font-medium mb-2">参考学生设置</label>
+                    <div class="space-y-2">
+                        <div>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="student_mode" value="all" checked class="form-radio">
+                                <span class="ml-2">所有学生均可参加</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="student_mode" value="selected" class="form-radio">
+                                <span class="ml-2">仅限指定学生</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 最大参加次数设置 - 对所有模式都显示 -->
+                    <div class="mt-3">
+                        <label class="block text-sm font-medium mb-1">最大参加次数：</label>
+                        <input type="number" id="max-attempts-all" value="1" min="1" max="10" class="w-20 border border-gray-300 rounded px-2 py-1">
+                        <span class="text-xs text-gray-500 ml-2">每个学生最多可参加的次数</span>
+                    </div>
+                    
+                    <!-- 学生选择区域 -->
+                    <div id="student-selection" class="hidden mt-3">
+                        <label class="block text-sm font-medium mb-2">选择学生：</label>
+                        <div class="max-h-40 overflow-y-auto border border-gray-300 rounded p-2">
+                            <div id="student-list">
+                                <!-- 动态加载学生列表 -->
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <label class="block text-sm font-medium mb-1">指定学生的最大参加次数：</label>
+                            <input type="number" id="max-attempts-selected" value="1" min="1" max="10" class="w-20 border border-gray-300 rounded px-2 py-1">
+                            <span class="text-xs text-gray-500 ml-2">可为不同学生设置不同次数</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex justify-end space-x-4">
@@ -227,14 +264,15 @@
         function closeModal() {
             document.getElementById('modal').classList.add('hidden');
             document.getElementById('modal').classList.remove('flex');
-        }
-
-        function openExamModal(paperId, paperTitle) {
+        }        function openExamModal(paperId, paperTitle) {
             // 设置隐藏input的试卷id
             document.getElementById('exam-paper-id').value = paperId;
 
             // 显示试卷标题
             document.getElementById('exam-paper-title-display').textContent = paperTitle;
+
+            // 加载学生列表
+            loadStudentList();
 
             // 显示弹窗
             const modal = document.getElementById('examModal');
@@ -242,21 +280,95 @@
             modal.classList.add('flex');
         }
 
+        async function loadStudentList() {
+            try {
+                const response = await fetch('/teacher/students');
+                const data = await response.json();
+                
+                const container = document.getElementById('student-list');
+                container.innerHTML = '';
+                
+                if (data.success && data.students) {
+                    data.students.forEach(student => {
+                        const label = document.createElement('label');
+                        label.className = 'flex items-center p-2 hover:bg-gray-50 cursor-pointer';
+                        label.innerHTML = `
+                            <input type="checkbox" name="selected_students" value="${student.username}" class="mr-2">
+                            <span>${student.username}</span>
+                        `;
+                        container.appendChild(label);
+                    });
+                } else {
+                    container.innerHTML = '<p class="text-gray-500 text-sm">暂无学生用户</p>';
+                }
+            } catch (error) {
+                console.error('加载学生列表失败:', error);
+                document.getElementById('student-list').innerHTML = '<p class="text-red-500 text-sm">加载失败</p>';
+            }
+        }
+
+        // 监听学生模式选择
+        document.addEventListener('DOMContentLoaded', function() {
+            const radioButtons = document.querySelectorAll('input[name="student_mode"]');
+            const studentSelection = document.getElementById('student-selection');
+            
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'selected') {
+                        studentSelection.classList.remove('hidden');
+                    } else {
+                        studentSelection.classList.add('hidden');
+                    }
+                });
+            });
+        });
+
         function closeExamModal() {
             document.getElementById('examModal').classList.add('hidden');
             document.getElementById('examModal').classList.remove('flex');
             document.getElementById('examForm').reset();
-        }
-
-        document.getElementById('examForm').addEventListener('submit', async function(e) {
+        }        document.getElementById('examForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+
+            const studentMode = document.querySelector('input[name="student_mode"]:checked').value;
+            let studentPermissions = [];
+            
+            if (studentMode === 'selected') {
+                const selectedStudents = document.querySelectorAll('input[name="selected_students"]:checked');
+                const maxAttempts = parseInt(document.getElementById('max-attempts-selected').value) || 1;
+                
+                if (selectedStudents.length === 0) {
+                    alert('请至少选择一个学生');
+                    return;
+                }
+                
+                selectedStudents.forEach(checkbox => {
+                    studentPermissions.push({
+                        student_name: checkbox.value,
+                        can_participate: true,
+                        max_attempts: maxAttempts
+                    });
+                });
+            } else {
+                // 所有学生模式下，获取全局最大参加次数
+                const maxAttemptsAll = parseInt(document.getElementById('max-attempts-all').value) || 1;
+                
+                // 为所有学生设置相同的最大参加次数
+                // 这里我们设置一个特殊标记，后端处理时会应用到所有学生
+                studentPermissions.push({
+                    student_name: '__ALL_STUDENTS__',
+                    can_participate: true,
+                    max_attempts: maxAttemptsAll
+                });
+            }
 
             const payload = {
                 exam_title: document.getElementById('exam-title').value,
-                paper_id: document.getElementById('exam-paper-id').value, // 这里用id
+                paper_id: document.getElementById('exam-paper-id').value,
                 start_time: document.getElementById('start-time').value,
                 end_time: document.getElementById('end-time').value,
-                description: document.getElementById('exam-desc').value
+                description: document.getElementById('exam-desc').value,
+                student_permissions: studentPermissions
             };
 
             try {
