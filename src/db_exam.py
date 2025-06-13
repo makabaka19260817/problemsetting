@@ -150,61 +150,42 @@ def auto_grade_objective_questions(exam_identifier: str):
     """自动评判客观题（选择题、判断题）"""
     conn = get_db_connection()
     cursor = conn.cursor()
-    
     # 获取所有答案
     cursor.execute('''
         SELECT DISTINCT student_name FROM answers WHERE exam_identifier = ?
     ''', (exam_identifier,))
     students = [row[0] for row in cursor.fetchall()]
-    
     from db_problems import get_exam_questions_by_identifier
     questions = get_exam_questions_by_identifier(exam_identifier)
-    
     auto_graded_count = 0
-    
     for student in students:
         cursor.execute('''
             SELECT question_id, answer FROM answers 
             WHERE exam_identifier = ? AND name = ?
         ''', (exam_identifier, student))
         student_answers = dict(cursor.fetchall())
-          for question in questions:
-            if question['qtype'] in ['single_choice', 'multiple_choice', 'true_false', 'fill_blank']:
+        for question in questions:
+            if question['qtype'] in ['single_choice', 'multiple_choice', 'true_false']:
                 qid = question['id']
                 if qid in student_answers:
                     student_answer = json.loads(student_answers[qid])
                     correct_answer = question['answer']
-                    
                     # 获取题目分值
-                    cursor.execute('''
-                        SELECT question_score FROM scores 
-                        WHERE exam_identifier = ? AND student_name = ? AND question_id = ?
-                    ''', (exam_identifier, student, qid))
-                    question_score = cursor.fetchone()[0]
-                    
-                    # 判断正确性
-                    is_correct = False
-                    if question['qtype'] == 'single_choice':
-                        is_correct = student_answer == correct_answer
-                    elif question['qtype'] == 'multiple_choice':
-                        is_correct = set(student_answer) == set(correct_answer)
-                    elif question['qtype'] == 'true_false':
-                        is_correct = student_answer == correct_answer
-                    elif question['qtype'] == 'fill_blank':
-                        # 填空题进行字符串比较（去除前后空格，不区分大小写）
-                        is_correct = str(student_answer).strip().lower() == str(correct_answer).strip().lower()
-                    
-                    score = question_score if is_correct else 0
-                    
+                    cursor.execute('SELECT score FROM paper_questions WHERE question_id = ? AND paper_id = ?', (qid, question['paper_id']))
+                    score_row = cursor.fetchone()
+                    score = score_row[0] if score_row else 0
+                    # 判断答案是否正确
+                    if student_answer == correct_answer:
+                        student_score = score
+                    else:
+                        student_score = 0
                     # 更新分数
                     cursor.execute('''
                         UPDATE scores 
-                        SET student_score = ?, is_graded = TRUE, graded_by = 'AUTO_SYSTEM', grade_time = ?
+                        SET student_score = ?, is_graded = TRUE, graded_by = ?, grade_time = ?
                         WHERE exam_identifier = ? AND student_name = ? AND question_id = ?
-                    ''', (score, datetime.now().isoformat(), exam_identifier, student, qid))
-                    
+                    ''', (student_score, 'auto', datetime.now().isoformat(), exam_identifier, student, qid))
                     auto_graded_count += 1
-    
     conn.commit()
     conn.close()
     return auto_graded_count

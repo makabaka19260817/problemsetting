@@ -6,7 +6,6 @@ from dashboard_admin import dashboard_admin_bp
 from dashboard_teacher import dashboard_teacher_bp
 from dashboard_student import dashboard_student_bp
 from exam_handler import exam_handler_bp
-from test_data_handler import test_data_bp
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -29,8 +28,8 @@ def register():
     password = data.get('password')
 
     if not all([username, email, password]):
-        # 跳转到注册失败页面，传递错误信息
-        return redirect(url_for('register_fail', message='请填写完整信息'))
+        # 缺少参数，跳转到失败页面
+        return redirect(url_for('register_fail', message='缺少注册信息'))
 
     success, msg = create_user(username, email, password)
     if success:
@@ -156,5 +155,4 @@ if __name__ == '__main__':
     app.register_blueprint(dashboard_teacher_bp)
     app.register_blueprint(dashboard_student_bp)
     app.register_blueprint(exam_handler_bp)
-    app.register_blueprint(test_data_bp)
     app.run(debug=True)
