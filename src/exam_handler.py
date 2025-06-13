@@ -1,9 +1,20 @@
-from flask import Blueprint, render_template, abort, request, jsonify
+from flask import Blueprint, render_template, abort, request, jsonify, session, redirect, url_for
 from db_problems import get_exam_questions_by_identifier
 from db_exam import save_exam_answers
 from datetime import datetime
+from functools import wraps
 
 exam_handler_bp = Blueprint('exam_handler', __name__, url_prefix='/exam')
+
+def student_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if 'username' not in session:
+            return redirect(url_for('login'))
+        if session.get('role') != 'student':
+            return "权限不足", 403
+        return f(*args, **kwargs)
+    return wrapper
 
 @exam_handler_bp.route('/<string:identifier>', methods=['GET'])
 def exam_page(identifier):

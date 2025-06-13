@@ -58,7 +58,7 @@ def login():
     success, result = validate_user(username_or_email, password)
     if success:
         session['user'] = result
-        session['is_admin'] = result['is_admin']
+        session['role'] = result['role']
         session['username'] = result['username']
         return redirect(url_for('dashboard.dashboard'))  # 登录成功跳到 dashboard 首页
     else:

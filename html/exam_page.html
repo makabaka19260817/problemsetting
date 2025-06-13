@@ -20,7 +20,11 @@
             <div id="questions-container" class="space-y-8">
                 {% for q in questions %}
                 <div class="border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition" data-qid="{{ q.id }}">
-                    <p class="text-lg font-medium mb-4 text-gray-900"><strong>题目 {{ loop.index }}:</strong> {{ q.content }}</p>
+                    <p class="text-lg font-medium mb-4 text-gray-900">
+                        <span class="text-sm text-blue-600 font-semibold">（ {{ q.score }} 分）</span>
+                        <strong>{{ loop.index }}. </strong> {{ q.content }}
+                    </p>
+
 
                     {% if q.qtype == 'single_choice' %}
                     <div class="flex flex-wrap gap-6">
@@ -47,12 +51,12 @@
                         <label class="inline-flex items-center cursor-pointer">
                             <input type="radio" name="q{{ q.id }}" value="True" required
                                 class="form-radio text-green-600 focus:ring-green-500" />
-                            <span class="ml-2 text-green-700 font-semibold">对</span>
+                            <span class="ml-2 text-green-700 font-semibold">正确</span>
                         </label>
                         <label class="inline-flex items-center cursor-pointer">
                             <input type="radio" name="q{{ q.id }}" value="False" required
                                 class="form-radio text-red-600 focus:ring-red-500" />
-                            <span class="ml-2 text-red-700 font-semibold">错</span>
+                            <span class="ml-2 text-red-700 font-semibold">错误</span>
                         </label>
                     </div>
 

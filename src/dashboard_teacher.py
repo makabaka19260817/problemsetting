@@ -20,7 +20,7 @@ def teacher_required(f):
     def wrapper(*args, **kwargs):
         if 'username' not in session:
             return redirect(url_for('login'))
-        if session.get('is_admin'):
+        if session.get('role') != 'teacher':
             # 管理员不能访问老师专属页面，或者改成允许都能访问看需求
             return "权限不足", 403
         return f(*args, **kwargs)
@@ -102,17 +102,17 @@ def exam_management():
 @teacher_required
 def create_exam():
     data = request.get_json()
-    paper_title = data.get('paper_title')
+    paper_id = data.get('paper_id')
     exam_title = data.get('exam_title')
     start_time = data.get('start_time')
     end_time = data.get('end_time')
     description = data.get('description', '')
 
-    if not all([paper_title, exam_title, start_time, end_time]):
+    if not all([paper_id, exam_title, start_time, end_time]):
         return jsonify({'success': False, 'error': '缺少必要字段'})
 
     try:
-        identifier = db_problems.create_exam(exam_title, paper_title, start_time, end_time, description)
+        identifier = db_problems.create_exam(exam_title, paper_id, start_time, end_time, description)
         return jsonify({'success': True, 'identifier': identifier})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
@@ -132,34 +132,33 @@ def exam_results_page(exam_identifier):
 @teacher_required
 def view_exam_results(exam_identifier):
     try:
+        paper_id = db_problems.get_paper_id_by_exam_identifier(exam_identifier)
+        if not paper_id:
+            return jsonify(success=False, error='考试标识符无效'), 404
+
+        scores = db_problems.get_question_scores_by_paper_id(paper_id)
         raw_results = db_exam.get_answers_by_exam(exam_identifier)
 
-        # name => {
-        #   "submit_time": "...",
-        #   "answers": [
-        #       {"question_id": 1, "content": "题干", "answer": "A"},
-        #       ...
-        #   ]
-        # }
         results_by_student = defaultdict(lambda: {"answers": [], "submit_time": None})
 
         for entry in raw_results:
             name = entry['name']
             qid = entry['question_id']
-            answer = json.loads(entry['answer'])  # 可能是字符串或数组
+            answer = json.loads(entry['answer'])
             content = entry.get('question_content', '(题干缺失)')
             submit_time = entry['submit_time']
+            score = scores.get(qid, 0)
 
             results_by_student[name]["answers"].append({
                 "question_id": qid,
                 "content": content,
-                "answer": answer
+                "answer": answer,
+                "score": score
             })
 
             if results_by_student[name]["submit_time"] is None or submit_time > results_by_student[name]["submit_time"]:
                 results_by_student[name]["submit_time"] = submit_time
 
-        # 构造最终返回结果
         results_list = [
             {
                 "name": name,
@@ -170,8 +169,10 @@ def view_exam_results(exam_identifier):
         ]
 
         return jsonify(success=True, results=results_list)
+
     except Exception as e:
         return jsonify(success=False, error=str(e)), 500
+
 
 #
 #
@@ -195,9 +196,17 @@ def all_questions():
 def save_paper_api():
     data = request.get_json()
     title = data.get('title')
-    questions = data.get('questions')  # ordered list of question IDs
-    if not title or not questions:
+    questions_raw = data.get('questions')  # list of {"id": ..., "score": ...}
+
+    if not title or not questions_raw:
         return jsonify({'success': False, 'message': '标题和题目不能为空'}), 400
+
+    try:
+        # 提取成 (id, score) 元组列表，并确保都是整数
+        questions = [(int(q['id']), int(q['score'])) for q in questions_raw]
+    except (KeyError, ValueError, TypeError):
+        return jsonify({'success': False, 'message': '题目信息格式不正确'}), 400
+
     success = db_problems.save_paper(title, questions)
     return jsonify({'success': success})
 
@@ -212,10 +221,11 @@ def get_all_exam_papers():
 @teacher_required
 def delete_exam_paper():
     data = request.get_json()
-    title = data.get('title')
-    if not title:
-        return jsonify({'success': False, 'error': '标题缺失'})
-    success = db_problems.delete_paper_by_title(title)
+    paper_id = data.get('paper_id')
+    print(paper_id)
+    if not paper_id:
+        return jsonify({'success': False, 'error': '试卷ID缺失'})
+    success = db_problems.delete_paper_by_id(paper_id)
     if success:
         return jsonify({'success': True})
     else:

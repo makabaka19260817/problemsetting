@@ -54,39 +54,46 @@
         </div>
     </div>
 
-    <!-- 弹窗：发起考试 -->
-    <div id="examModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-lg space-y-5">
-            <h2 class="text-2xl font-bold">📝 发起考试</h2>
+    <!-- 弹窗主体部分 -->
+    <div id="examModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-96">
+            <h2 class="text-xl font-semibold mb-4">发起考试</h2>
             <form id="examForm" class="space-y-4">
-                <input type="hidden" id="exam-paper-title">
+
+                <!-- 隐藏输入，保存选中试卷ID -->
+                <input type="hidden" id="exam-paper-id" name="paper_id" value="">
+
+                <!-- 显示选中试卷标题 -->
+                <p class="mb-2 font-semibold">试卷：<span id="exam-paper-title-display"></span></p>
+
                 <div>
-                    <label class="block font-medium mb-1">考试标题</label>
-                    <input type="text" id="exam-title" class="w-full border px-3 py-2 rounded focus:outline-none focus:ring focus:border-blue-400" required>
+                    <label for="exam-title" class="block font-medium mb-1">考试标题</label>
+                    <input id="exam-title" name="exam_title" type="text" required class="border border-gray-300 rounded px-3 py-2 w-full" />
                 </div>
+
                 <div>
-                    <label class="block font-medium mb-1">开始时间</label>
-                    <input type="datetime-local" id="start-time" class="w-full border px-3 py-2 rounded focus:outline-none focus:ring focus:border-blue-400" required>
+                    <label for="start-time" class="block font-medium mb-1">开始时间</label>
+                    <input id="start-time" name="start_time" type="datetime-local" required class="border border-gray-300 rounded px-3 py-2 w-full" />
                 </div>
+
                 <div>
-                    <label class="block font-medium mb-1">结束时间</label>
-                    <input type="datetime-local" id="end-time" class="w-full border px-3 py-2 rounded focus:outline-none focus:ring focus:border-blue-400" required>
+                    <label for="end-time" class="block font-medium mb-1">结束时间</label>
+                    <input id="end-time" name="end_time" type="datetime-local" required class="border border-gray-300 rounded px-3 py-2 w-full" />
                 </div>
+
                 <div>
-                    <label class="block font-medium mb-1">考试简介</label>
-                    <textarea id="exam-desc" rows="3" class="w-full border px-3 py-2 rounded focus:outline-none focus:ring focus:border-blue-400"></textarea>
+                    <label for="exam-desc" class="block font-medium mb-1">考试说明</label>
+                    <textarea id="exam-desc" name="description" rows="3" class="border border-gray-300 rounded px-3 py-2 w-full"></textarea>
                 </div>
-                <div class="flex justify-end gap-3">
-                    <button type="button" onclick="closeExamModal()" class="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500">
-                        取消
-                    </button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                        确认发起
-                    </button>
+
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="closeExamModal()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">取消</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">确认发起</button>
                 </div>
             </form>
         </div>
     </div>
+
 
     <!-- 考试列表 -->
     <div>
@@ -149,20 +156,25 @@
             tbody.innerHTML = '';
             for (const paper of papers) {
                 const tr = document.createElement('tr');
+
+                // 保存试卷ID
+                tr.setAttribute('data-paper-id', paper.id);
+
                 tr.innerHTML = `
-        <td class="border px-4 py-2">${paper.title}</td>
-        <td class="border px-4 py-2">${paper.question_count}</td>
-        <td class="border px-4 py-2">
-          <button onclick='viewPaper(${JSON.stringify(paper.question_ids)})' class="text-blue-600 hover:underline">查看</button>
-          <button onclick='deletePaper("${paper.title}")' class="text-red-600 hover:underline ml-4">删除</button>
-          <button onclick='openExamModal("${paper.title}")' class="text-green-600 hover:underline ml-4">发起考试</button>
-        </td>
-      `;
+            <td class="border px-4 py-2">${paper.title}</td>
+            <td class="border px-4 py-2">${paper.question_count}</td>
+            <td class="border px-4 py-2">
+                <button onclick='viewPaper(${JSON.stringify(paper.question_infos.map(q => q.id))})' class="text-blue-600 hover:underline">查看</button>
+                <button onclick='deletePaperById("${paper.id}")' class="text-red-600 hover:underline ml-4">删除</button>
+                <button onclick='openExamModal("${paper.id}", "${paper.title.replace(/"/g, "&quot;")}")' class="text-green-600 hover:underline ml-4">发起考试</button>
+            </td>
+        `;
                 tbody.appendChild(tr);
             }
         }
 
-        async function deletePaper(title) {
+        async function deletePaperById(id) {
+            console.log(id)
             if (!confirm('确定要删除该试卷吗？')) return;
             const res = await fetch('/teacher/paper/delete', {
                 method: 'POST',
@@ -170,7 +182,7 @@
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    title
+                    paper_id: id
                 })
             });
             const result = await res.json();
@@ -179,6 +191,7 @@
         }
 
         async function viewPaper(questionIds) {
+            console.log(questionIds);
             const res = await fetch('/teacher/paper/questions', {
                 method: 'POST',
                 headers: {
@@ -216,10 +229,17 @@
             document.getElementById('modal').classList.remove('flex');
         }
 
-        function openExamModal(paperTitle) {
-            document.getElementById('exam-paper-title').value = paperTitle;
-            document.getElementById('examModal').classList.remove('hidden');
-            document.getElementById('examModal').classList.add('flex');
+        function openExamModal(paperId, paperTitle) {
+            // 设置隐藏input的试卷id
+            document.getElementById('exam-paper-id').value = paperId;
+
+            // 显示试卷标题
+            document.getElementById('exam-paper-title-display').textContent = paperTitle;
+
+            // 显示弹窗
+            const modal = document.getElementById('examModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
         }
 
         function closeExamModal() {
@@ -230,29 +250,33 @@
 
         document.getElementById('examForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+
             const payload = {
                 exam_title: document.getElementById('exam-title').value,
-                paper_title: document.getElementById('exam-paper-title').value,
+                paper_id: document.getElementById('exam-paper-id').value, // 这里用id
                 start_time: document.getElementById('start-time').value,
                 end_time: document.getElementById('end-time').value,
                 description: document.getElementById('exam-desc').value
             };
 
-            const res = await fetch('/teacher/exam_management/create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await res.json();
-            if (result.success) {
-                alert(`考试已创建，标识符为 ${result.identifier}`);
-                closeExamModal();
-                location.reload();
-            } else {
-                alert('创建失败：' + (result.error || '未知错误'));
+            try {
+                const res = await fetch('/teacher/exam_management/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert(`考试已创建，标识符为 ${result.identifier}`);
+                    closeExamModal();
+                    location.reload();
+                } else {
+                    alert('创建失败：' + (result.error || '未知错误'));
+                }
+            } catch (err) {
+                alert('网络错误或服务器无响应');
             }
         });
 

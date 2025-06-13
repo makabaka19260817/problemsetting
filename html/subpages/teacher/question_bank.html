@@ -68,8 +68,8 @@
             </div>
 
             <div>
-                <label for="answer" class="block text-sm font-medium text-gray-700 mb-1">答案（JSON或文本）</label>
-                <textarea id="answer" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" rows="3" required></textarea>
+                <label class="block text-sm font-medium text-gray-700 mb-1">答案</label>
+                <div id="answerSection" class="space-y-2"></div>
             </div>
 
             <div class="flex justify-end gap-3 pt-4">
@@ -193,14 +193,94 @@
             document.getElementById('qtype').value = q.qtype || '';
             document.getElementById('content').value = q.content || '';
             document.getElementById('difficulty').value = q.difficulty || 1;
-            document.getElementById('answer').value = q.answer || '';
+            console.log(q.answer);
+            renderAnswerInput(q.qtype, q.answer);
         }
 
         function disableForm(disable) {
-            ['qtype', 'content', 'difficulty', 'answer'].forEach(id => {
-                document.getElementById(id).disabled = disable;
+            document.getElementById('qtype').disabled = disable;
+            document.getElementById('content').disabled = disable;
+            document.getElementById('difficulty').disabled = disable;
+
+            // 遍历答案区的所有 input 和 textarea 并设置 disabled
+            document.querySelectorAll('#answerSection input, #answerSection textarea').forEach(el => {
+                el.disabled = disable;
             });
+
+            // 控制保存按钮显示/隐藏
             document.querySelector('#questionForm button[type=submit]').style.display = disable ? 'none' : 'inline-block';
+        }
+
+        function renderAnswerInput(qtype, value = '') {
+            const container = document.getElementById('answerSection');
+            container.innerHTML = '';
+
+            if (qtype === 'single_choice' || qtype === 'multiple_choice') {
+                ['A', 'B', 'C', 'D'].forEach(letter => {
+                    const input = document.createElement('input');
+                    input.type = (qtype === 'single_choice') ? 'radio' : 'checkbox';
+                    input.name = 'answerOption';
+                    input.value = letter;
+                    input.checked = value.split(',').includes(input.value);
+                    input.className = 'mr-2';
+
+                    const span = document.createElement('span');
+                    span.textContent = letter;
+
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'flex items-center gap-2';
+                    wrapper.appendChild(input);
+                    wrapper.appendChild(span);
+
+                    answerSection.appendChild(wrapper);
+                });
+            } else if (qtype === 'true_false') {
+                ['正确', '错误'].forEach((label, idx) => {
+                    const input = document.createElement('input');
+                    input.type = 'radio';
+                    input.name = 'answerTrueFalse';
+                    input.value = idx === 0 ? '正确' : '错误';
+                    input.checked = value === input.value;
+                    input.className = 'mr-2';
+
+                    const span = document.createElement('span');
+                    span.textContent = label;
+
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'flex items-center gap-2';
+                    wrapper.appendChild(input);
+                    wrapper.appendChild(span);
+
+                    container.appendChild(wrapper);
+                });
+            } else {
+                const textarea = document.createElement('textarea');
+                textarea.id = 'essayAnswer';
+                textarea.value = value || '';
+                textarea.className = 'w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400';
+                textarea.rows = 3;
+                container.appendChild(textarea);
+            }
+        }
+
+        function collectAnswer(qtype) {
+            if (qtype === 'single_choice') {
+                // 选中哪个字母就返回字母
+                const selected = document.querySelector('#answerSection input[type=radio]:checked');
+                return selected ? selected.value : '';
+            } else if (qtype === 'multiple_choice') {
+                // 收集所有被选中的字母，用逗号连接
+                const checked = Array.from(document.querySelectorAll('#answerSection input[type=checkbox]:checked'));
+                return checked.map(input => input.value).join(',');
+            } else if (qtype === 'true_false') {
+                const selected = document.querySelector('#answerSection input[type=radio]:checked');
+                // 返回 '正确' 或 '错误'
+                return selected ? selected.value : '';
+            } else {
+                // 问答题，返回textarea内容
+                const textarea = document.getElementById('essayAnswer');
+                return textarea ? textarea.value.trim() : '';
+            }
         }
 
         document.getElementById('btnAddQuestion').onclick = () => {
@@ -216,6 +296,10 @@
             showModal();
         };
 
+        document.getElementById('qtype').addEventListener('change', () => {
+            renderAnswerInput(document.getElementById('qtype').value);
+        });
+
         document.getElementById('btnCloseModal').onclick = hideModal;
 
         document.getElementById('questionForm').onsubmit = e => {
@@ -225,7 +309,7 @@
                 qtype: document.getElementById('qtype').value,
                 content: document.getElementById('content').value,
                 difficulty: parseInt(document.getElementById('difficulty').value),
-                answer: document.getElementById('answer').value,
+                answer: collectAnswer(document.getElementById('qtype').value),
             };
             if (id) {
                 // 编辑

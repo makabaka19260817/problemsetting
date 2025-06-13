@@ -56,6 +56,21 @@
     <script>
         let allQuestions = [];
 
+        function renderQType(qtype) {
+            switch (qtype) {
+                case 'single_choice':
+                    return '选择题 - 单选';
+                case 'multiple_choice':
+                    return '选择题 - 多选';
+                case 'true_false':
+                    return '判断题';
+                case 'essay':
+                    return '问答题';
+                default:
+                    return qtype;
+            }
+        }
+
         async function loadQuestions() {
             const res = await fetch('/teacher/questions/all');
             allQuestions = await res.json();
@@ -64,7 +79,8 @@
             for (const q of allQuestions) {
                 const li = document.createElement('li');
                 li.className = 'p-2 border rounded bg-white flex justify-between items-center';
-                li.textContent = `[${q.qtype}] ${q.content.slice(0, 20)}... 难度: ${q.difficulty}`;
+                li.dataset.qid = q.id;
+                li.textContent = `[${renderQType(q.qtype)}] ${q.content.slice(0, 20)}... 难度: ${q.difficulty}`;
 
                 const btnContainer = document.createElement('div');
 
@@ -86,32 +102,76 @@
         }
 
         function addToPaper(q) {
+            // 如果题目已在试卷中，不再添加
+            if (document.querySelector(`#paper-list li[data-qid="${q.id}"]`)) {
+                return;
+            }
+            // 移除题库中的对应项
+            const questionList = document.getElementById('question-list');
+            const allLis = Array.from(questionList.children);
+            let removedLi = null;
+            for (const li of allLis) {
+                if (li.textContent.includes(q.content.slice(0, 20))) {
+                    removedLi = li;
+                    li.remove();
+                    break;
+                }
+            }
+
             const li = document.createElement('li');
             li.className = 'p-2 border rounded bg-white flex justify-between items-center';
-            li.textContent = `[${q.qtype}] ${q.content.slice(0, 20)}... 难度: ${q.difficulty}`;
             li.dataset.qid = q.id;
 
+            const contentSpan = document.createElement('span');
+            contentSpan.textContent = `[${renderQType(q.qtype)}] ${q.content.slice(0, 20)}... 难度: ${q.difficulty}`;
+            li.appendChild(contentSpan);
+
             const btnContainer = document.createElement('div');
+            btnContainer.className = 'flex items-center';
+
+            const scoreInput = document.createElement('input');
+            scoreInput.type = 'number';
+            scoreInput.min = '1';
+            scoreInput.value = '5';
+            scoreInput.title = '分数';
+            scoreInput.className = 'ml-2 w-20 border rounded px-1 py-0.5 text-sm text-center';
+            btnContainer.appendChild(scoreInput);
 
             const viewBtn = document.createElement('button');
-            viewBtn.textContent = '查看详细信息';
-            viewBtn.className = 'ml-2 text-blue-600 hover:underline';
+            viewBtn.textContent = '查看';
+            viewBtn.className = 'ml-2 text-blue-600 hover:underline text-sm';
             viewBtn.onclick = () => showModal(q);
             btnContainer.appendChild(viewBtn);
 
             const removeBtn = document.createElement('button');
             removeBtn.textContent = '移除';
-            removeBtn.className = 'ml-2 text-red-600 hover:underline';
-            removeBtn.onclick = () => li.remove();
+            removeBtn.className = 'ml-2 text-red-600 hover:underline text-sm';
+            removeBtn.onclick = () => {
+                li.remove();
+                if (removedLi) {
+                    questionList.appendChild(removedLi); // 恢复题库项
+                }
+            };
             btnContainer.appendChild(removeBtn);
 
             li.appendChild(btnContainer);
             document.getElementById('paper-list').appendChild(li);
         }
 
+
+
         async function savePaper() {
             const title = document.getElementById('paper-title').value;
-            const qids = Array.from(document.querySelectorAll('#paper-list > li')).map(li => li.dataset.qid);
+
+            const questions = Array.from(document.querySelectorAll('#paper-list > li')).map(li => {
+                const qid = li.dataset.qid;
+                const score = li.querySelector('input[type="number"]').value;
+                return {
+                    id: qid,
+                    score: parseInt(score) || 0
+                };
+            });
+
             const res = await fetch('/teacher/paper', {
                 method: 'POST',
                 headers: {
@@ -119,16 +179,18 @@
                 },
                 body: JSON.stringify({
                     title,
-                    questions: qids
+                    questions
                 })
             });
+
             const result = await res.json();
             alert(result.success ? '保存成功' : '保存失败');
         }
 
+
         function showModal(question) {
             document.getElementById('modal-content').textContent =
-                `类型: ${question.qtype}\n内容: ${question.content}\n难度: ${question.difficulty}`;
+                `类型: ${renderQType(question.qtype)}\n内容: ${question.content}\n难度: ${question.difficulty}`;
             document.getElementById('modal').classList.remove('hidden');
             document.getElementById('modal').classList.add('flex');
         }
