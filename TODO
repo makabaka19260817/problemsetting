@@ -10,3 +10,31 @@ db_exams/answers: (id，考试标识符，问题id，用户名，答案，提交
 需要的表：
 db_exams/<1>: (答案id，分数)？→打分
 db_exams/<2>: (用户名，考试标识符，剩余提交次数)？→学生页面查看考试、考试对象限制？
+
+目前的主要路由：
+未登录：/, /auth, /login, /register, /logout
+分流：/dashboard
+管理员页面：/admin/user_management, /admin/add_user, /admin_delete_user
+教师页面：/teacher/ai_question_generation, /teacher/ai_generate, 
+         /teacher/exam_management, /teacher/exam_management/create,
+                                   /teacher/exam_management/exams,
+                                   /teacher/exam_management/<string:exam_identifier>/results,                                
+                                   /teacher/exam_management/<string:exam_identifier>/results_page,
+         /teacher/paper_generation, /teacher/paper/save, 
+                                    /teacher/paper/all, 
+                                    /teacher/paper/delete,
+                                    /teacher/paper/questions,
+         /teacher/question_bank, /teacher/questions,
+                                 /teacher/question/<int:q_id>,
+                                 /teacher/question/add,
+                                 /teacher/question/edit/<int:q_id>,
+                                 /teacher/question/delete/<int:q_id>,
+保留测试路由：/test-data/*
+
+需要变化的地方：
+学生页面：/student/*
+/teacher/exam_management/create的路由需要推送考试给表
+...?
+
+数据库中答案的格式：单选 A | 多选 A,B,C | 判断 正确/错误 | 问答 string
+得注意一下前端传回来的作答格式对不对

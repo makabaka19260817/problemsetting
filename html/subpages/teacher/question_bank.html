@@ -166,7 +166,7 @@
             document.querySelectorAll('.btn-edit').forEach(btn => {
                 btn.onclick = () => {
                     const id = btn.dataset.id;
-                    axios.get(`/teacher/question/${id}`).then(res => {
+                    axios.get(`/teacher/question/edit/${id}`).then(res => {
                         const q = res.data;
                         document.getElementById('modalTitle').textContent = '编辑题目';
                         fillForm(q);
@@ -179,7 +179,7 @@
                 btn.onclick = () => {
                     const id = btn.dataset.id;
                     if (confirm('确定删除该题目吗？')) {
-                        axios.delete(`/teacher/question/${id}`).then(() => {
+                        axios.delete(`/teacher/question/delete/${id}`).then(() => {
                             alert('删除成功');
                             loadQuestions(currentPage);
                         }).catch(() => alert('删除失败'));
@@ -313,7 +313,7 @@
             };
             if (id) {
                 // 编辑
-                axios.put(`/teacher/question/${id}`, payload)
+                axios.put(`/teacher/question/edit/${id}`, payload)
                     .then(() => {
                         alert('修改成功');
                         hideModal();
@@ -321,7 +321,7 @@
                     }).catch(() => alert('修改失败'));
             } else {
                 // 新增
-                axios.post('/teacher/question', payload)
+                axios.post('/teacher/question/add', payload)
                     .then(() => {
                         alert('添加成功');
                         hideModal();
