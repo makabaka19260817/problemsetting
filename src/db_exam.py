@@ -2,6 +2,7 @@ import sqlite3
 import json
 import os
 from datetime import datetime
+from db_problems import get_question_detail
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, 'answers.db')
@@ -14,7 +15,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS answers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             exam_identifier TEXT NOT NULL,
-            name TEXT NOT NULL,
+            student_name TEXT NOT NULL,
             question_id INTEGER NOT NULL,
             answer TEXT NOT NULL,
             submit_time TEXT NOT NULL
@@ -71,7 +72,7 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-def save_exam_answers(exam_identifier: str, name: str, answers: dict):
+def save_exam_answers(exam_identifier: str, student_name: str, answers: dict):
     """
     保存某次考试的所有答案，同时初始化评分记录
     """
@@ -85,7 +86,7 @@ def save_exam_answers(exam_identifier: str, name: str, answers: dict):
         FROM exam_participations ep
         LEFT JOIN exam_permissions epr ON ep.exam_identifier = epr.exam_identifier AND ep.student_name = epr.student_name
         WHERE ep.exam_identifier = ? AND ep.student_name = ?
-    ''', (exam_identifier, name))
+    ''', (exam_identifier, student_name))
     participation_data = cursor.fetchone()
     
     max_attempts = 1  # 默认只能参加一次
@@ -101,13 +102,13 @@ def save_exam_answers(exam_identifier: str, name: str, answers: dict):
             UPDATE exam_participations 
             SET participation_count = participation_count + 1, last_participation = ?
             WHERE exam_identifier = ? AND student_name = ?
-        ''', (submit_time, exam_identifier, name))
+        ''', (submit_time, exam_identifier, student_name))
     else:
         # 首次参加，创建记录
         cursor.execute('''
             INSERT INTO exam_participations (exam_identifier, student_name, participation_count, last_participation)
             VALUES (?, ?, 1, ?)
-        ''', (exam_identifier, name, submit_time))
+        ''', (exam_identifier, student_name, submit_time))
 
     # 获取题目分值
     from db_problems import get_question_scores_by_exam_identifier
@@ -116,9 +117,9 @@ def save_exam_answers(exam_identifier: str, name: str, answers: dict):
     for qid, ans in answers.items():
         # 保存答案
         cursor.execute('''
-            INSERT INTO answers (exam_identifier, name, question_id, answer, submit_time)
+            INSERT INTO answers (exam_identifier, student_name, question_id, answer, submit_time)
             VALUES (?, ?, ?, ?, ?)
-        ''', (exam_identifier, name, qid, json.dumps(ans), submit_time))
+        ''', (exam_identifier, student_name, qid, json.dumps(ans), submit_time))
         
         # 初始化评分记录
         question_score = question_scores.get(int(qid), 0)
@@ -126,10 +127,31 @@ def save_exam_answers(exam_identifier: str, name: str, answers: dict):
             INSERT OR REPLACE INTO scores 
             (exam_identifier, student_name, question_id, question_score, student_score, is_graded)
             VALUES (?, ?, ?, ?, 0, FALSE)
-        ''', (exam_identifier, name, qid, question_score))
+        ''', (exam_identifier, student_name, qid, question_score))
 
     conn.commit()
     conn.close()
+
+def get_answers_by_exam(exam_identifier: str):
+    """
+    查询某考试所有答卷，包含题目内容
+    :param exam_identifier: 考试标识符
+    :return: 每条记录包含 student_name, question_id, answer, submit_time, question_content
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM answers WHERE exam_identifier = ?', (exam_identifier,))
+    rows = cursor.fetchall()
+    conn.close()
+
+    results = []
+    for row in rows:
+        row_dict = dict(row)
+        q_detail = get_question_detail(row_dict['question_id'])
+        row_dict['question_content'] = q_detail['content'] if q_detail else "(题目不存在)"
+        results.append(row_dict)
+
+    return results
 
 def grade_question(exam_identifier: str, student_name: str, question_id: int, score: float, graded_by: str):
     """给特定学生的特定题目打分"""
@@ -165,10 +187,10 @@ def auto_grade_objective_questions(exam_identifier: str):
     for student in students:
         cursor.execute('''
             SELECT question_id, answer FROM answers 
-            WHERE exam_identifier = ? AND name = ?
+            WHERE exam_identifier = ? AND student_name = ?
         ''', (exam_identifier, student))
         student_answers = dict(cursor.fetchall())
-          for question in questions:
+        for question in questions:
             if question['qtype'] in ['single_choice', 'multiple_choice', 'true_false', 'fill_blank']:
                 qid = question['id']
                 if qid in student_answers:
@@ -222,7 +244,7 @@ def get_student_exam_results(student_name: str):
             COUNT(s.id) as question_count,
             MAX(a.submit_time) as submit_time
         FROM scores s
-        JOIN answers a ON s.exam_identifier = a.exam_identifier AND s.student_name = a.name AND s.question_id = a.question_id
+        JOIN answers a ON s.exam_identifier = a.exam_identifier AND s.student_name = a.student_name AND s.question_id = a.question_id
         WHERE s.student_name = ?
         GROUP BY s.exam_identifier
         ORDER BY submit_time DESC
