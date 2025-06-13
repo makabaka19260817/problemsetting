@@ -33,28 +33,30 @@ def init_db():
                     username TEXT UNIQUE NOT NULL,
                     email TEXT UNIQUE NOT NULL,
                     password_hash TEXT NOT NULL,
-                    is_admin INTEGER NOT NULL DEFAULT 0
+                    role TEXT NOT NULL DEFAULT 'user'
                 )
             ''')
             cursor.execute('''
-                INSERT INTO users (username, email, password_hash, is_admin)
+                INSERT INTO users (username, email, password_hash, role)
                 VALUES (?, ?, ?, ?)
-            ''', ('admin', 'admin@example.com', password_hash, 1))
+            ''', ('admin', 'admin@example.com', password_hash, 'admin'))
             conn.commit()
         print("数据库已创建，并写入管理员用户：admin")
 
 def get_db():
+    if not os.path.exists(DATABASE):
+        init_db()
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
 
-def create_user(username, email, password, is_admin=False):
+def create_user(username, email, password, role='student'):
     password_hash = generate_password_hash(password)
     try:
         conn = get_db()
         conn.execute(
-            'INSERT INTO users (username, email, password_hash, is_admin) VALUES (?, ?, ?, ?)',
-            (username, email, password_hash, int(is_admin))
+            'INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)',
+            (username, email, password_hash, role)
         )
         conn.commit()
         return True, '注册成功'
@@ -68,19 +70,20 @@ def validate_user(username_or_email, password):
         (username_or_email, username_or_email)
     )
     user = cur.fetchone()
+    print(user.keys())
     if user and check_password_hash(user['password_hash'], password):
         return True, {
             'username': user['username'],
-            'is_admin': bool(user['is_admin'])
+            'role': user['role']
         }
     return False, '用户名或密码错误'
 
 def get_all_users():
     """返回所有用户信息（用于管理员界面）"""
     conn = get_db()
-    cur = conn.execute('SELECT username, email, is_admin FROM users ORDER BY id ASC')
+    cur = conn.execute('SELECT username, email, role FROM users ORDER BY id ASC')
     users = [
-        {'username': row['username'], 'email': row['email'], 'is_admin': bool(row['is_admin'])}
+        {'username': row['username'], 'email': row['email'], 'role': row['role']}
         for row in cur.fetchall()
     ]
     return users

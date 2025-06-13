@@ -38,6 +38,7 @@ def init_db():
             paper_id INTEGER,
             question_id INTEGER,
             position INTEGER,
+            score INTEGER,
             FOREIGN KEY (paper_id) REFERENCES papers(id),
             FOREIGN KEY (question_id) REFERENCES questions(id)
         )
@@ -46,11 +47,12 @@ def init_db():
         CREATE TABLE IF NOT EXISTS exams (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             exam_title TEXT NOT NULL,
-            paper_title TEXT NOT NULL,
+            paper_id INTEGER NOT NULL,
             start_time TEXT NOT NULL,
             end_time TEXT NOT NULL,
             description TEXT,
-            identifier TEXT UNIQUE NOT NULL
+            identifier TEXT UNIQUE NOT NULL,
+            FOREIGN KEY (paper_id) REFERENCES papers(id)
         )
     ''')
     conn.commit()
@@ -112,16 +114,18 @@ def get_all_questions():
     conn.close()
     return [dict(row) for row in rows]
 
-def save_paper(title, question_ids):
+def save_paper(title, question_items):  # question_items 是 [(question_id, score), ...]
     conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute('INSERT INTO papers (title) VALUES (?)', (title,))
     paper_id = cursor.lastrowid
 
-    for position, qid in enumerate(question_ids):
-        cursor.execute('INSERT INTO paper_questions (paper_id, question_id, position) VALUES (?, ?, ?)',
-                       (paper_id, qid, position))
+    for position, (qid, score) in enumerate(question_items):
+        cursor.execute('''
+            INSERT INTO paper_questions (paper_id, question_id, position, score)
+            VALUES (?, ?, ?, ?)
+        ''', (paper_id, qid, position, score))
 
     conn.commit()
     conn.close()
@@ -136,32 +140,25 @@ def get_all_papers():
         paper_id = paper['id']
         # print(paper_id)
         questions = conn.execute(
-            'SELECT question_id FROM paper_questions WHERE paper_id = ? ORDER BY position',
+            'SELECT question_id, score FROM paper_questions WHERE paper_id = ? ORDER BY position',
             (paper_id,)
         ).fetchall()
-        question_ids = [q['question_id'] for q in questions]
+        question_infos = [{'id': q['question_id'], 'score': q['score']} for q in questions]
         # print(question_ids)
         result.append({
             'title': paper['title'],
-            'question_count': len(question_ids),
-            'question_ids': question_ids
+            'id': paper_id,
+            'question_count': len(question_infos),
+            'question_infos': question_infos
         })
         # print(result)
 
     conn.close()
     return result
 
-def delete_paper_by_title(title):
+def delete_paper_by_id(paper_id):
     conn = get_db_connection()
     cur = conn.cursor()
-
-    # 获取 paper_id
-    paper_row = cur.execute('SELECT id FROM papers WHERE title = ?', (title,)).fetchone()
-    if not paper_row:
-        conn.close()
-        return False
-
-    paper_id = paper_row['id']
 
     # 删除 paper_questions 中的关联记录
     cur.execute('DELETE FROM paper_questions WHERE paper_id = ?', (paper_id,))
@@ -191,45 +188,61 @@ def get_questions_by_ids(ids):
 def generate_exam_identifier():
     return str(uuid.uuid4())
 
-def create_exam(exam_title, paper_title, start_time, end_time, description):
+def create_exam(exam_title, paper_id, start_time, end_time, description):
     identifier = generate_exam_identifier()
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO exams (exam_title, paper_title, start_time, end_time, description, identifier)
+        INSERT INTO exams (exam_title, paper_id, start_time, end_time, description, identifier)
         VALUES (?, ?, ?, ?, ?, ?)
-    ''', (exam_title, paper_title, start_time, end_time, description, identifier))
+    ''', (exam_title, paper_id, start_time, end_time, description, identifier))
     conn.commit()
     conn.close()
     return identifier
 
 def get_all_exams():
     conn = get_db_connection()
-    rows = conn.execute('SELECT exam_title, paper_title, start_time, end_time, description, identifier FROM exams ORDER BY start_time DESC').fetchall()
+    rows = conn.execute('''
+        SELECT e.exam_title, p.title AS paper_title, e.start_time, e.end_time, e.description, e.identifier
+        FROM exams e
+        JOIN papers p ON e.paper_id = p.id
+        ORDER BY e.start_time DESC
+    ''').fetchall()
     conn.close()
     return [dict(row) for row in rows]
 
 def get_exam_questions_by_identifier(identifier):
     conn = get_db_connection()
 
-    exam = conn.execute('SELECT paper_title FROM exams WHERE identifier = ?', (identifier,)).fetchone()
+    exam = conn.execute('SELECT paper_id FROM exams WHERE identifier = ?', (identifier,)).fetchone()
     if not exam:
         conn.close()
         return None
+    
+    paper = conn.execute('SELECT title FROM papers WHERE id = ?', (exam['paper_id'],)).fetchone()
+    paper_title = paper['title']
 
-    paper_title = exam['paper_title']
-    paper_row = conn.execute('SELECT id FROM papers WHERE title = ?', (paper_title,)).fetchone()
-    if not paper_row:
-        conn.close()
-        return None
-
-    paper_id = paper_row['id']
+    paper_id = exam['paper_id']
     questions = conn.execute('''
-        SELECT q.* FROM questions q
+        SELECT q.*, pq.score FROM questions q
         JOIN paper_questions pq ON q.id = pq.question_id
         WHERE pq.paper_id = ?
         ORDER BY pq.position
     ''', (paper_id,)).fetchall()
 
     conn.close()
-    return questions
+    return [dict(row) for row in questions]
+
+def get_paper_id_by_exam_identifier(identifier):
+    conn = get_db_connection()
+    exam = conn.execute('SELECT paper_id FROM exams WHERE identifier = ?', (identifier,)).fetchone()
+    conn.close()
+    if exam:
+        return exam['paper_id']
+    return None
+
+def get_question_scores_by_paper_id(paper_id):
+    conn = get_db_connection()
+    rows = conn.execute('SELECT question_id, score FROM paper_questions WHERE paper_id = ?', (paper_id,)).fetchall()
+    conn.close()
+    return {row['question_id']: row['score'] for row in rows}

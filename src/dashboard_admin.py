@@ -9,7 +9,7 @@ def admin_required(f):
     def wrapper(*args, **kwargs):
         if 'username' not in session:
             return redirect(url_for('login'))
-        if not session.get('is_admin'):
+        if session.get('role') != 'admin':
             return "权限不足", 403
         return f(*args, **kwargs)
     return wrapper
@@ -26,8 +26,8 @@ def add_user():
     username = request.form['username']
     email = request.form['email']
     password = request.form['password']
-    is_admin = int(request.form.get('is_admin', 0)) == 1
-    create_user(username, email, password, is_admin)
+    role = request.form['role']
+    create_user(username, email, password, role)
     return redirect(url_for('dashboard_admin.user_management'))
 
 @dashboard_admin_bp.route('/delete_user', methods=['POST'])

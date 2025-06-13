@@ -45,7 +45,7 @@
                     <tr>
                         <th class="py-3 px-4">用户名</th>
                         <th class="py-3 px-4">邮箱</th>
-                        <th class="py-3 px-4">是否管理员</th>
+                        <th class="py-3 px-4">角色</th>
                         <th class="py-3 px-4">操作</th>
                     </tr>
                 </thead>
@@ -54,7 +54,9 @@
                     <tr class="border-t hover:bg-gray-50 transition">
                         <td class="py-2 px-4">{{ user['username'] }}</td>
                         <td class="py-2 px-4">{{ user['email'] }}</td>
-                        <td class="py-2 px-4">{{ '是' if user['is_admin'] else '否' }}</td>
+                        <td class="py-2 px-4">
+                            {% if user['role'] == 'admin' %} 管理员 {% elif user['role'] == 'teacher' %} 教师 {% else %} 学生 {% endif %}
+                        </td>
                         <td class="py-2 px-4">
                             <form action="{{ url_for('dashboard_admin.delete_user_route') }}" method="post" class="inline">
                                 <input type="hidden" name="username" value="{{ user['username'] }}">
@@ -87,12 +89,14 @@
                 <input type="password" name="password" required class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
             </div>
             <div>
-                <label class="block font-medium mb-1">是否管理员：</label>
-                <select name="is_admin" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
-                    <option value="0">否</option>
-                    <option value="1">是</option>
+                <label class="block font-medium mb-1">角色：</label>
+                <select name="role" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    <option value="admin">管理员</option>
+                    <option value="teacher">教师</option>
+                    <option value="student">学生</option>
                 </select>
             </div>
+
             <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-semibold hover:bg-blue-700 transition">
                 添加用户
             </button>

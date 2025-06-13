@@ -15,8 +15,14 @@ def login_required(f):
 @dashboard_bp.route('/dashboard')
 @login_required
 def dashboard():
-    is_admin = session.get('is_admin', False)
-    if is_admin:
+    role = session.get('role', False)
+    print(role)
+    if role == 'admin':
         return render_template('dashboard_admin.html', username=session['username'])
-    else:
+    elif role == 'teacher':
         return render_template('dashboard_teacher.html', username=session['username'])
+    elif role == 'student':
+        return render_template('dashboard_student.html', username=session['username'])
+    else:
+        pass
+

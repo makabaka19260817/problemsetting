@@ -4,27 +4,30 @@ from db_problems import add_question, get_questions, init_db
 from db_users import create_user, read_admin_password, generate_password_hash
 import sqlite3
 import os
+from functools import wraps
 
 test_data_bp = Blueprint('test_data', __name__, url_prefix='/test-data')
 
-def check_admin():
-    """检查当前用户是否为管理员"""
-    if 'user' not in session or not session.get('is_admin'):
-        return False
-    return True
+def admin_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if 'username' not in session:
+            return redirect(url_for('login'))
+        if session.get('role') != 'admin':
+            return "权限不足", 403
+        return f(*args, **kwargs)
+    return wrapper
 
 @test_data_bp.route('/')
+@admin_required
 def test_data_page():
     """测试数据管理页面"""
-    if not check_admin():
-        return redirect(url_for('login_register_page'))
     return render_template('test_data.html')
 
+@admin_required
 @test_data_bp.route('/add-sample-questions', methods=['POST'])
 def add_sample_questions():
     """添加示例题目数据"""
-    if not check_admin():
-        return jsonify({'success': False, 'message': '权限不足'})
     
     # 示例题目数据
     sample_questions = [
@@ -91,25 +94,24 @@ def add_sample_questions():
         return jsonify({'success': False, 'message': f'添加失败：{str(e)}'})
 
 @test_data_bp.route('/add-sample-users', methods=['POST'])
+@admin_required
 def add_sample_users():
     """添加示例用户数据"""
-    if not check_admin():
-        return jsonify({'success': False, 'message': '权限不足'})
     
     # 示例用户数据
     sample_users = [
-        {'username': 'teacher1', 'email': 'teacher1@example.com', 'password': '123456', 'is_admin': False},
-        {'username': 'teacher2', 'email': 'teacher2@example.com', 'password': '123456', 'is_admin': False},
-        {'username': 'student1', 'email': 'student1@example.com', 'password': '123456', 'is_admin': False},
-        {'username': 'student2', 'email': 'student2@example.com', 'password': '123456', 'is_admin': False},
-        {'username': 'student3', 'email': 'student3@example.com', 'password': '123456', 'is_admin': False},
+        {'username': 'teacher1', 'email': 'teacher1@example.com', 'password': '123456', 'role': 'teacher'},
+        {'username': 'teacher2', 'email': 'teacher2@example.com', 'password': '123456', 'role': 'teacher'},
+        {'username': 'student1', 'email': 'student1@example.com', 'password': '123456', 'role': 'student'},
+        {'username': 'student2', 'email': 'student2@example.com', 'password': '123456', 'role': 'student'},
+        {'username': 'student3', 'email': 'student3@example.com', 'password': '123456', 'role': 'student'},
     ]
     
     success_count = 0
     failed_users = []
     
     for user in sample_users:
-        success, msg = create_user(user['username'], user['email'], user['password'])
+        success, msg = create_user(user['username'], user['email'], user['password'], user['role'])
         if success:
             success_count += 1
         else:
@@ -122,10 +124,9 @@ def add_sample_users():
     return jsonify({'success': True, 'message': message})
 
 @test_data_bp.route('/clear-all-data', methods=['POST'])
+@admin_required
 def clear_all_data():
     """清空所有测试数据"""
-    if not check_admin():
-        return jsonify({'success': False, 'message': '权限不足'})
     
     try:
         # 获取数据库连接
@@ -156,9 +157,9 @@ def clear_all_data():
             admin_password = read_admin_password()
             password_hash = generate_password_hash(admin_password)
             cursor.execute('''
-                INSERT INTO users (username, email, password_hash, is_admin)
+                INSERT INTO users (username, email, password_hash, role)
                 VALUES (?, ?, ?, ?)
-            ''', ('admin', 'admin@example.com', password_hash, 1))
+            ''', ('admin', 'admin@example.com', password_hash, 'admin'))
             conn.commit()
             conn.close()
         
@@ -167,10 +168,9 @@ def clear_all_data():
         return jsonify({'success': False, 'message': f'清空失败：{str(e)}'})
 
 @test_data_bp.route('/generate-random-data', methods=['POST'])
+@admin_required
 def generate_random_data():
     """生成随机测试数据"""
-    if not check_admin():
-        return jsonify({'success': False, 'message': '权限不足'})
     
     try:
         data = request.get_json()
@@ -220,10 +220,9 @@ def generate_random_data():
         return jsonify({'success': False, 'message': f'生成失败：{str(e)}'})
 
 @test_data_bp.route('/database-status')
+@admin_required
 def database_status():
     """获取数据库状态信息"""
-    if not check_admin():
-        return jsonify({'success': False, 'message': '权限不足'})
     
     try:
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
