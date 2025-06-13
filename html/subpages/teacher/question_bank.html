@@ -167,7 +167,7 @@
             document.querySelectorAll('.btn-edit').forEach(btn => {
                 btn.onclick = () => {
                     const id = btn.dataset.id;
-                    axios.get(`/teacher/question/edit/${id}`).then(res => {
+                    axios.get(`/teacher/question/${id}`).then(res => {
                         const q = res.data;
                         document.getElementById('modalTitle').textContent = '编辑题目';
                         fillForm(q);
