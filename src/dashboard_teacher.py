@@ -280,7 +280,9 @@ def export_exam_results(exam_identifier):
         
         # 创建CSV内容
         output = io.StringIO()
+        output.write('\ufeff')  # 写入 UTF-8 BOM
         writer = csv.writer(output)
+
         
         # 写入标题行
         writer.writerow(['学生姓名', '提交时间', '总得分', '满分', '得分率(%)', '题目数'])
