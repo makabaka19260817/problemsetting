@@ -8,12 +8,35 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, 'questions_papers.db')
 
 def get_db_connection():
+    """安全的数据库连接，带有重试机制和优化设置"""
+    import time
+    
     # 如果数据库文件不存在，则初始化
     if not os.path.exists(DB_PATH):
         init_db()
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    
+    max_retries = 3
+    retry_delay = 0.1
+    
+    for attempt in range(max_retries):
+        try:
+            conn = sqlite3.connect(DB_PATH, timeout=10.0)
+            # 优化设置
+            conn.execute("PRAGMA journal_mode=WAL;")  # 启用WAL模式，减少锁定
+            conn.execute("PRAGMA synchronous=NORMAL;")  # 平衡性能和安全性
+            conn.execute("PRAGMA temp_store=MEMORY;")  # 临时文件存储在内存
+            conn.execute("PRAGMA busy_timeout=30000;")  # 30秒超时
+            conn.row_factory = sqlite3.Row
+            return conn
+        except sqlite3.OperationalError as e:
+            if "database is locked" in str(e) and attempt < max_retries - 1:
+                print(f"数据库锁定，{retry_delay}秒后重试... (尝试 {attempt + 1}/{max_retries})")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # 指数退避
+            else:
+                raise
+    
+    raise sqlite3.OperationalError("多次重试后仍无法连接数据库")
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -47,6 +70,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS exams (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             exam_title TEXT NOT NULL,
+            paper_title TEXT NOT NULL,
             paper_id INTEGER NOT NULL,
             start_time TEXT NOT NULL,
             end_time TEXT NOT NULL,
@@ -115,21 +139,37 @@ def get_all_questions():
     return [dict(row) for row in rows]
 
 def save_paper(title, question_items):  # question_items 是 [(question_id, score), ...]
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    """保存试卷，使用安全的数据库连接管理"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # 开始事务
+            cursor.execute('BEGIN;')
+            
+            try:
+                cursor.execute('INSERT INTO papers (title) VALUES (?)', (title,))
+                paper_id = cursor.lastrowid
 
-    cursor.execute('INSERT INTO papers (title) VALUES (?)', (title,))
-    paper_id = cursor.lastrowid
+                for position, (qid, score) in enumerate(question_items):
+                    cursor.execute('''
+                        INSERT INTO paper_questions (paper_id, question_id, position, score)
+                        VALUES (?, ?, ?, ?)
+                    ''', (paper_id, qid, position, score))
 
-    for position, (qid, score) in enumerate(question_items):
-        cursor.execute('''
-            INSERT INTO paper_questions (paper_id, question_id, position, score)
-            VALUES (?, ?, ?, ?)
-        ''', (paper_id, qid, position, score))
-
-    conn.commit()
-    conn.close()
-    return True
+                # 提交事务
+                conn.commit()
+                return True
+                
+            except Exception as e:
+                # 回滚事务
+                conn.rollback()
+                print(f"保存试卷失败，已回滚: {e}")
+                raise
+                
+    except Exception as e:
+        print(f"数据库连接失败: {e}")
+        return False
 
 def get_all_papers():
     conn = get_db_connection()
@@ -192,10 +232,21 @@ def create_exam(exam_title, paper_id, start_time, end_time, description):
     identifier = generate_exam_identifier()
     conn = get_db_connection()
     cursor = conn.cursor()
+    
+    # 首先获取试卷标题
+    cursor.execute('SELECT title FROM papers WHERE id = ?', (paper_id,))
+    paper_result = cursor.fetchone()
+    if not paper_result:
+        conn.close()
+        raise ValueError(f"未找到ID为 {paper_id} 的试卷")
+    
+    paper_title = paper_result[0]
+    
+    # 插入考试记录，包含paper_title
     cursor.execute('''
-        INSERT INTO exams (exam_title, paper_id, start_time, end_time, description, identifier)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', (exam_title, paper_id, start_time, end_time, description, identifier))
+        INSERT INTO exams (exam_title, paper_title, paper_id, start_time, end_time, description, identifier)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (exam_title, paper_title, paper_id, start_time, end_time, description, identifier))
     conn.commit()
     conn.close()
     return identifier
@@ -231,7 +282,7 @@ def get_exam_questions_by_identifier(identifier):
     ''', (paper_id,)).fetchall()
 
     conn.close()
-    return [dict(row) for row in questions]
+    return [dict(row) for row in questions], paper_title
 
 def get_paper_id_by_exam_identifier(identifier):
     conn = get_db_connection()
@@ -246,3 +297,30 @@ def get_question_scores_by_paper_id(paper_id):
     rows = conn.execute('SELECT question_id, score FROM paper_questions WHERE paper_id = ?', (paper_id,)).fetchall()
     conn.close()
     return {row['question_id']: row['score'] for row in rows}
+
+def get_question_scores_by_exam_identifier(exam_identifier: str):
+    """根据考试标识符获取题目分值映射"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT pq.question_id, pq.score
+        FROM exams e
+        JOIN paper_questions pq ON e.paper_id = pq.paper_id
+        WHERE e.identifier = ?
+    ''', (exam_identifier,))
+    
+    scores = {row[0]: row[1] for row in cursor.fetchall()}
+    conn.close()
+    return scores
+
+def get_exam_title_by_identifier(exam_identifier: str):
+    """根据考试标识符获取考试标题"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT exam_title FROM exams WHERE identifier = ?', (exam_identifier,))
+    result = cursor.fetchone()
+    conn.close()
+    
+    return result[0] if result else "未知考试"

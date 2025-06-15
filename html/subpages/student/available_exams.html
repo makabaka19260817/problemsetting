@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <title>可参加考试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 min-h-screen p-6">
+    <!-- 顶部导航 -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <a href="{{ url_for('dashboard.dashboard') }}" class="text-blue-600 hover:underline font-medium text-lg">
+                ← 返回控制台
+            </a>
+        </div>
+        <form action="{{ url_for('logout') }}" method="post">
+            <button type="submit" class="text-red-600 hover:underline font-medium text-lg">
+                注销并返回登录
+            </button>
+        </form>
+    </div>
+
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">📝 可参加考试</h1>
+
+        <!-- 考试列表 -->
+        <div id="exam-list" class="space-y-4">
+            <!-- 动态加载 -->
+        </div>
+
+        <!-- 空状态 -->
+        <div id="empty-state" class="hidden text-center py-12">
+            <div class="text-gray-400 text-6xl mb-4">📋</div>
+            <h3 class="text-xl font-semibold text-gray-600 mb-2">暂无可参加的考试</h3>
+            <p class="text-gray-500">请等待教师发布新的考试</p>
+        </div>
+    </div>
+
+    <script>
+        async function loadAvailableExams() {
+            try {
+                const response = await fetch('/student/api/available_exams');
+                const data = await response.json();
+                
+                const container = document.getElementById('exam-list');
+                const emptyState = document.getElementById('empty-state');
+                
+                container.innerHTML = '';
+                
+                if (data.success && data.exams && data.exams.length > 0) {
+                    emptyState.classList.add('hidden');
+                    
+                    data.exams.forEach(exam => {
+                        const examCard = document.createElement('div');
+                        examCard.className = 'bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition';
+                        
+                        const startTime = new Date(exam.start_time);
+                        const endTime = new Date(exam.end_time);
+                        const now = new Date();
+                        
+                        let statusClass = 'bg-green-100 text-green-800';
+                        let statusText = '可参加';
+                        let canTakeExam = true;
+                        
+                        if (now < startTime) {
+                            statusClass = 'bg-yellow-100 text-yellow-800';
+                            statusText = '未开始';
+                            canTakeExam = false;
+                        } else if (now > endTime) {
+                            statusClass = 'bg-red-100 text-red-800';
+                            statusText = '已结束';
+                            canTakeExam = false;
+                        }
+                        
+                        examCard.innerHTML = `
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex-1">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">${exam.exam_title}</h3>
+                                    <p class="text-gray-600 mb-3">${exam.description || '暂无描述'}</p>
+                                    
+                                    <div class="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                                        <div>
+                                            <strong>开始时间:</strong> ${startTime.toLocaleString()}
+                                        </div>
+                                        <div>
+                                            <strong>结束时间:</strong> ${endTime.toLocaleString()}
+                                        </div>
+                                        <div>
+                                            <strong>已参加次数:</strong> ${exam.current_attempts || 0}/${exam.max_attempts}
+                                        </div>
+                                        <div>
+                                            <strong>考试标识:</strong> ${exam.identifier}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex flex-col items-end space-y-2">
+                                    <span class="px-3 py-1 rounded-full text-xs font-medium ${statusClass}">
+                                        ${statusText}
+                                    </span>
+                                    ${canTakeExam ? `
+                                        <button onclick="takeExam('${exam.identifier}')" 
+                                                class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                                            参加考试
+                                        </button>
+                                    ` : `
+                                        <button disabled class="bg-gray-300 text-gray-500 px-4 py-2 rounded-lg cursor-not-allowed">
+                                            ${statusText}
+                                        </button>
+                                    `}
+                                </div>
+                            </div>
+                        `;
+                        
+                        container.appendChild(examCard);
+                    });
+                } else {
+                    emptyState.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('加载考试列表失败:', error);
+                document.getElementById('exam-list').innerHTML = 
+                    '<div class="text-red-500 text-center py-8">加载失败，请刷新页面重试</div>';
+            }
+        }
+
+        function takeExam(identifier) {
+            if (confirm('确定要参加这场考试吗？一旦开始考试，您的参加次数将会增加。')) {
+                window.open(`/exam/${identifier}`, '_blank');
+            }
+        }
+
+        // 页面加载时执行
+        document.addEventListener('DOMContentLoaded', loadAvailableExams);
+        
+        // 每30秒刷新一次状态
+        setInterval(loadAvailableExams, 30000);
+    </script>
+</body>
+
+</html>
