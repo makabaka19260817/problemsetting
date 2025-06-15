@@ -53,7 +53,7 @@
 - **友好提示**：详细的成功/错误消息
 - **直观操作**：卡片式布局，清晰的功能分区
 
-更多详细信息：[测试数据管理功能文档](doc/TEST_DATA_MANAGEMENT.md) | [用户使用指南](doc/USER_GUIDE.md)
+更多详细信息：[测试数据管理功能文档](doc/TEST_DATA_MANAGEMENT.md) | [用户使用指南](doc/USER_GUIDE.md) | [快速部署指南](doc/CONFIG_SETUP.md)
 
 ## ⚙️ 技术栈
 
