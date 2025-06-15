@@ -35,7 +35,7 @@
             <div class="px-6 py-4 border-b border-gray-200">
                 <h2 class="text-lg font-semibold text-gray-900">历史考试记录</h2>
             </div>
-            
+
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
@@ -69,7 +69,7 @@
             try {
                 const response = await fetch('/student/api/exam_results');
                 const data = await response.json();
-                
+
                 if (data.success && data.results && data.results.length > 0) {
                     displayResults(data.results);
                     updateStats(data.results);
@@ -85,7 +85,7 @@
         function displayResults(results) {
             const tbody = document.getElementById('results-table');
             const emptyState = document.getElementById('empty-state');
-            
+
             emptyState.classList.add('hidden');
             tbody.innerHTML = '';
 
@@ -93,12 +93,12 @@
                 const percentage = result.max_score > 0 ? Math.round((result.total_score / result.max_score) * 100) : 0;
                 const row = document.createElement('tr');
                 row.className = 'hover:bg-gray-50';
-                
+
                 let scoreClass = 'text-gray-900';
                 if (percentage >= 90) scoreClass = 'text-green-600 font-semibold';
                 else if (percentage >= 60) scoreClass = 'text-blue-600 font-semibold';
                 else scoreClass = 'text-red-600 font-semibold';
-                
+
                 row.innerHTML = `
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="text-sm font-medium text-gray-900">${result.exam_title}</div>
@@ -124,20 +124,20 @@
                            class="text-blue-600 hover:text-blue-900">查看详情</a>
                     </td>
                 `;
-                
+
                 tbody.appendChild(row);
             });
         }
 
         function updateStats(results) {
             const statsContainer = document.getElementById('stats-cards');
-            
+
             const totalExams = results.length;
             const totalScore = results.reduce((sum, r) => sum + r.total_score, 0);
             const totalMaxScore = results.reduce((sum, r) => sum + r.max_score, 0);
             const avgPercentage = totalMaxScore > 0 ? Math.round((totalScore / totalMaxScore) * 100) : 0;
             const passedExams = results.filter(r => (r.total_score / r.max_score) >= 0.6).length;
-            
+
             statsContainer.innerHTML = `
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex items-center">
@@ -204,7 +204,7 @@
         }
 
         function showError() {
-            document.getElementById('results-table').innerHTML = 
+            document.getElementById('results-table').innerHTML =
                 '<tr><td colspan="7" class="text-center py-8 text-red-500">加载失败，请刷新页面重试</td></tr>';
         }
 

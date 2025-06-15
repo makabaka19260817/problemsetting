@@ -70,6 +70,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS exams (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             exam_title TEXT NOT NULL,
+            paper_title TEXT NOT NULL,
             paper_id INTEGER NOT NULL,
             start_time TEXT NOT NULL,
             end_time TEXT NOT NULL,
@@ -281,7 +282,7 @@ def get_exam_questions_by_identifier(identifier):
     ''', (paper_id,)).fetchall()
 
     conn.close()
-    return [dict(row) for row in questions]
+    return [dict(row) for row in questions], paper_title
 
 def get_paper_id_by_exam_identifier(identifier):
     conn = get_db_connection()

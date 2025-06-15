@@ -28,6 +28,7 @@ def api_available_exams():
     try:
         student_name = session['username']
         exams = db_exam.get_available_exams_for_student(student_name)
+        print(exams)
         return jsonify({'success': True, 'exams': exams})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
@@ -66,44 +67,20 @@ def exam_detail(exam_identifier):
     """查看具体考试的详细成绩"""
     try:
         student_name = session['username']
-        
-        # 获取学生在该考试中的答案和得分
-        from db_exam import get_db_connection
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            SELECT 
-                s.question_id, s.question_score, s.student_score, s.is_graded,
-                a.answer, a.submit_time
-            FROM scores s
-            JOIN answers a ON s.exam_identifier = a.exam_identifier 
-                AND s.student_name = a.name 
-                AND s.question_id = a.question_id
-            WHERE s.exam_identifier = ? AND s.student_name = ?
-            ORDER BY s.question_id
-        ''', (exam_identifier, student_name))
-        
-        details = []
-        for row in cursor.fetchall():
-            detail = dict(row)
-            detail['answer'] = json.loads(detail['answer'])
-            
-            # 获取题目内容
-            from db_problems import get_question_detail
-            question = get_question_detail(detail['question_id'])
-            if question:
-                detail['question_content'] = question['content']
-                detail['question_type'] = question['qtype']
-                detail['correct_answer'] = question['answer']
-            
-            details.append(detail)
-        
-        conn.close()
+        details = db_exam.get_student_exam_result_detail(student_name, exam_identifier)
+        lis = db_exam.get_available_exams_for_student(student_name)
+        has_remaining = False
+        for avaliable_exam in lis:
+            if avaliable_exam["identifier"] == exam_identifier:
+                has_remaining = True
+        for entry in details:
+            if has_remaining:
+                entry["correct_answer"] = "?"
         
         # 获取考试标题
         from db_problems import get_exam_title_by_identifier
         exam_title = get_exam_title_by_identifier(exam_identifier)
+        print(details)
         
         return render_template('subpages/student/exam_detail.html', 
                              exam_identifier=exam_identifier,

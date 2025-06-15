@@ -27,7 +27,7 @@
         <div class="bg-white rounded-lg shadow p-6 mb-6">
             <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ exam_title }}</h1>
             <p class="text-gray-600">考试标识: {{ exam_identifier }}</p>
-            
+
             {% if details %}
             <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="text-center p-3 bg-blue-50 rounded">
@@ -40,9 +40,7 @@
                 </div>
                 <div class="text-center p-3 bg-green-50 rounded">
                     <div class="text-xl font-bold text-green-600">
-                        {% set total_score = details|sum(attribute='student_score') %}
-                        {% set max_score = details|sum(attribute='question_score') %}
-                        {{ "%.1f"|format((total_score/max_score*100) if max_score > 0 else 0) }}%
+                        {% set total_score = details|sum(attribute='student_score') %} {% set max_score = details|sum(attribute='question_score') %} {{ "%.1f"|format((total_score/max_score*100) if max_score > 0 else 0) }}%
                     </div>
                     <div class="text-sm text-gray-600">得分率</div>
                 </div>
@@ -57,8 +55,8 @@
                 <div class="flex items-start justify-between mb-4">
                     <div class="flex-1">
                         <h3 class="text-lg font-semibold text-gray-900 mb-2">
-                            第{{ loop.index }}题 
-                            <span class="text-sm font-normal text-gray-500">({{ detail.question_type }})</span>
+                            第{{ loop.index }}题
+                            <span class="text-sm font-normal text-gray-500">({% if detail.question_type == 'single_choice' %}单选题{% elif detail.question_type == 'multiple_choice' %}多选题{% elif detail.question_type == 'true_false' %}判断题{% elif detail.question_type == 'essay' %}简答题{% else %}{{ detail.question_type }}{% endif %})</span>
                         </h3>
                         <div class="prose max-w-none mb-4">
                             <p class="text-gray-700">{{ detail.question_content }}</p>
@@ -69,9 +67,9 @@
                             {{ detail.student_score }}/{{ detail.question_score }}
                         </div>
                         {% if detail.is_graded %}
-                            <div class="text-xs text-green-600">已评分</div>
+                        <div class="text-xs text-green-600">已评分</div>
                         {% else %}
-                            <div class="text-xs text-yellow-600">待评分</div>
+                        <div class="text-xs text-yellow-600">待评分</div>
                         {% endif %}
                     </div>
                 </div>
@@ -81,16 +79,11 @@
                     <div>
                         <h4 class="font-medium text-gray-900 mb-2">我的答案:</h4>
                         <div class="p-3 bg-blue-50 rounded border">
-                            {% if detail.question_type in ['single_choice', 'multiple_choice'] %}
-                                {% if detail.answer is string %}
-                                    <span class="font-mono">{{ detail.answer }}</span>
-                                {% else %}
-                                    <span class="font-mono">{{ detail.answer|join(', ') if detail.answer is iterable else detail.answer }}</span>
-                                {% endif %}
-                            {% elif detail.question_type == 'true_false' %}
-                                <span class="font-mono">{{ '正确' if detail.answer else '错误' }}</span>
-                            {% else %}
-                                <div class="whitespace-pre-wrap font-mono text-sm">{{ detail.answer }}</div>
+                            {% if detail.question_type in ['single_choice', 'multiple_choice'] %} {% if detail.answer is string %}
+                            <span class="font-mono">{{ detail.answer }}</span> {% else %}
+                            <span class="font-mono">{{ detail.answer|join(', ') if detail.answer is iterable else detail.answer }}</span> {% endif %} {% elif detail.question_type == 'true_false' %}
+                            <span class="font-mono">{{ detail.answer }}</span> {% else %}
+                            <div class="whitespace-pre-wrap font-mono text-sm">{{ detail.answer }}</div>
                             {% endif %}
                         </div>
                     </div>
@@ -99,16 +92,11 @@
                     <div>
                         <h4 class="font-medium text-gray-900 mb-2">正确答案:</h4>
                         <div class="p-3 bg-green-50 rounded border">
-                            {% if detail.question_type in ['single_choice', 'multiple_choice'] %}
-                                {% if detail.correct_answer is string %}
-                                    <span class="font-mono">{{ detail.correct_answer }}</span>
-                                {% else %}
-                                    <span class="font-mono">{{ detail.correct_answer|join(', ') if detail.correct_answer is iterable else detail.correct_answer }}</span>
-                                {% endif %}
-                            {% elif detail.question_type == 'true_false' %}
-                                <span class="font-mono">{{ '正确' if detail.correct_answer else '错误' }}</span>
-                            {% else %}
-                                <div class="whitespace-pre-wrap font-mono text-sm">{{ detail.correct_answer }}</div>
+                            {% if detail.question_type in ['single_choice', 'multiple_choice'] %} {% if detail.correct_answer is string %}
+                            <span class="font-mono">{{ detail.correct_answer }}</span> {% else %}
+                            <span class="font-mono">{{ detail.correct_answer|join(', ') if detail.correct_answer is iterable else detail.correct_answer }}</span> {% endif %} {% elif detail.question_type == 'true_false' %}
+                            <span class="font-mono">{{ detail.correct_answer }}</span> {% else %}
+                            <div class="whitespace-pre-wrap font-mono text-sm">{{ detail.correct_answer }}</div>
                             {% endif %}
                         </div>
                     </div>
@@ -116,29 +104,27 @@
 
                 <!-- 答案分析 -->
                 <div class="mt-4 pt-4 border-t border-gray-200">
-                    {% if detail.question_type in ['single_choice', 'multiple_choice', 'true_false'] %}
-                        {% if detail.student_score == detail.question_score %}
-                            <div class="flex items-center text-green-600">
-                                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    {% if detail.question_type in ['single_choice', 'multiple_choice', 'true_false'] %} {% if detail.student_score == detail.question_score %}
+                    <div class="flex items-center text-green-600">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                                 </svg>
-                                <span class="font-medium">回答正确</span>
-                            </div>
-                        {% else %}
-                            <div class="flex items-center text-red-600">
-                                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <span class="font-medium">回答正确</span>
+                    </div>
+                    {% else %}
+                    <div class="flex items-center text-red-600">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
                                 </svg>
-                                <span class="font-medium">回答错误</span>
-                            </div>
-                        {% endif %}
-                    {% else %}
-                        <div class="flex items-center text-blue-600">
-                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <span class="font-medium">回答错误</span>
+                    </div>
+                    {% endif %} {% else %}
+                    <div class="flex items-center text-blue-600">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                             </svg>
-                            <span class="font-medium">主观题，需要教师评分</span>
-                        </div>
+                        <span class="font-medium">主观题，需要教师评分</span>
+                    </div>
                     {% endif %}
                 </div>
             </div>

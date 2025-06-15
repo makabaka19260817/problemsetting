@@ -19,11 +19,11 @@ def student_required(f):
 @exam_handler_bp.route('/<string:identifier>', methods=['GET'])
 @student_required
 def exam_page(identifier):
-    questions = get_exam_questions_by_identifier(identifier)
+    questions, title = get_exam_questions_by_identifier(identifier)
     if questions is None:
         abort(404, '考试不存在或试卷不存在')
 
-    return render_template('exam_page.html', identifier=identifier, questions=questions)
+    return render_template('exam_page.html', identifier=identifier, questions=questions, title=title)
 
 @exam_handler_bp.route('/<string:identifier>/submit', methods=['POST'])
 @student_required
@@ -33,7 +33,8 @@ def submit_exam(identifier):
         if not data:
             return jsonify(success=False, error="请求数据为空"), 400
 
-        name = data.get('name', '').strip()
+        # name = data.get('name', '').strip()
+        name = session.get('username')
         answers = data.get('answers', {})
 
         if not name:
