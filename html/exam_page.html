@@ -12,9 +12,8 @@
         <h1 class="text-4xl font-bold text-center mb-8 text-gray-800">考试</h1>
 
         <form id="exam-form" class="space-y-6">
-            <div>
-                <label for="name" class="block text-lg font-semibold text-gray-700 mb-2">姓名：</label>
-                <input type="text" id="name" name="name" required class="w-full border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" />
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">{{ title }}</h2>
             </div>
 
             <div id="questions-container" class="space-y-8">
@@ -47,12 +46,12 @@
                     </div> {% elif q.qtype == 'true_false' %}
                     <div class="flex gap-10">
                         <label class="inline-flex items-center cursor-pointer">
-                            <input type="radio" name="q{{ q.id }}" value="True" required
+                            <input type="radio" name="q{{ q.id }}" value="正确" required
                                 class="form-radio text-green-600 focus:ring-green-500" />
                             <span class="ml-2 text-green-700 font-semibold">正确</span>
                         </label>
                         <label class="inline-flex items-center cursor-pointer">
-                            <input type="radio" name="q{{ q.id }}" value="False" required
+                            <input type="radio" name="q{{ q.id }}" value="错误" required
                                 class="form-radio text-red-600 focus:ring-red-500" />
                             <span class="ml-2 text-red-700 font-semibold">错误</span>
                         </label>
@@ -76,12 +75,6 @@
     <script>
         document.getElementById('exam-form').addEventListener('submit', async(e) => {
             e.preventDefault();
-
-            const name = document.getElementById('name').value.trim();
-            if (!name) {
-                alert('请填写姓名');
-                return;
-            }
 
             const answers = {};
             const questions = document.querySelectorAll('#questions-container > div[data-qid]');

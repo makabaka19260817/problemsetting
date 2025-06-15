@@ -180,9 +180,10 @@ def auto_grade_objective_questions(exam_identifier: str):
     students = [row[0] for row in cursor.fetchall()]
     
     from db_problems import get_exam_questions_by_identifier
-    questions = get_exam_questions_by_identifier(exam_identifier)
+    questions, _ = get_exam_questions_by_identifier(exam_identifier)
     
     auto_graded_count = 0
+    print('q', questions)
     
     for student in students:
         cursor.execute('''
@@ -203,18 +204,20 @@ def auto_grade_objective_questions(exam_identifier: str):
                         WHERE exam_identifier = ? AND student_name = ? AND question_id = ?
                     ''', (exam_identifier, student, qid))
                     question_score = cursor.fetchone()[0]
-                    
                     # 判断正确性
                     is_correct = False
                     if question['qtype'] == 'single_choice':
                         is_correct = student_answer == correct_answer
                     elif question['qtype'] == 'multiple_choice':
-                        is_correct = set(student_answer) == set(correct_answer)
+                        print(student_answer, correct_answer.split(","))
+                        print(set(student_answer), set(correct_answer.split(",")))
+                        is_correct = set(student_answer) == set(correct_answer.split(","))
                     elif question['qtype'] == 'true_false':
                         is_correct = student_answer == correct_answer
-                    elif question['qtype'] == 'fill_blank':
+                    elif question['qtype'] == 'essay':
                         # 填空题进行字符串比较（去除前后空格，不区分大小写）
                         is_correct = str(student_answer).strip().lower() == str(correct_answer).strip().lower()
+                    print(student_answer, correct_answer, is_correct)
                     
                     score = question_score if is_correct else 0
                     
@@ -291,7 +294,7 @@ def get_available_exams_for_student(student_name: str):
         ''', (exam_identifier, student_name))
         participation = cursor.fetchone()
         
-        can_participate = True
+        can_participate = False
         max_attempts = 1
         current_attempts = 0
         
@@ -308,6 +311,7 @@ def get_available_exams_for_student(student_name: str):
             available_exams.append(exam)
     
     conn.close()
+    # print(available_exams)
     return available_exams
 
 def set_exam_permission(exam_identifier: str, student_name: str, can_participate: bool = True, max_attempts: int = 1):
@@ -324,3 +328,47 @@ def set_exam_permission(exam_identifier: str, student_name: str, can_participate
     conn.commit()
     conn.close()
 
+def get_student_answer_score_by_answerid(answer_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT * FROM scores WHERE id = ?
+    ''', (answer_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def get_student_exam_result_detail(student_name, exam_identifier):
+    # 获取学生在该考试中的答案和得分
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT 
+            s.question_id, s.question_score, s.student_score, s.is_graded,
+            a.answer, a.submit_time
+        FROM scores s
+        JOIN answers a ON s.exam_identifier = a.exam_identifier 
+            AND s.student_name = a.student_name 
+            AND s.question_id = a.question_id
+        WHERE s.exam_identifier = ? AND s.student_name = ?
+        ORDER BY s.question_id
+    ''', (exam_identifier, student_name))
+    
+    details = []
+    for row in cursor.fetchall():
+        detail = dict(row)
+        detail['answer'] = json.loads(detail['answer'])
+        
+        # 获取题目内容
+        from db_problems import get_question_detail
+        question = get_question_detail(detail['question_id'])
+        if question:
+            detail['question_content'] = question['content']
+            detail['question_type'] = question['qtype']
+            detail['correct_answer'] = question['answer']
+        
+        details.append(detail)
+    
+    conn.close()
+    return details

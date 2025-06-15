@@ -50,7 +50,7 @@
             <div class="px-6 py-4 border-b border-gray-200">
                 <h2 class="text-lg font-semibold text-gray-900">学生答卷列表</h2>
             </div>
-            
+
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
@@ -81,13 +81,13 @@
                     </svg>
                 </button>
             </div>
-            
+
             <div class="p-6 max-h-[calc(90vh-120px)] overflow-y-auto">
                 <div id="grading-content">
                     <!-- 动态加载答卷内容 -->
                 </div>
             </div>
-            
+
             <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-4">
                 <button onclick="saveAllGrades()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
                     保存所有评分
@@ -112,7 +112,7 @@
             try {
                 const response = await fetch(`/teacher/exam_management/${examIdentifier}/results`);
                 const data = await response.json();
-                
+
                 if (data.success) {
                     displayResults(data.results);
                     updateStats(data.results);
@@ -128,13 +128,14 @@
         function displayResults(results) {
             const tbody = document.getElementById('result-table-body');
             tbody.innerHTML = '';
+            console.log('原始结果数据:', results);
 
             results.forEach(result => {
                 const totalScore = result.answers.reduce((sum, ans) => sum + (ans.student_score || 0), 0);
                 const maxScore = result.answers.reduce((sum, ans) => sum + ans.score, 0);
                 const gradedCount = result.answers.filter(ans => ans.is_graded).length;
                 const totalQuestions = result.answers.length;
-                
+
                 const row = document.createElement('tr');
                 row.className = 'hover:bg-gray-50';
                 row.innerHTML = `
@@ -168,15 +169,15 @@
 
         function updateStats(results) {
             const container = document.getElementById('stats-section');
-            
+
             const totalStudents = results.length;
             const totalAnswers = results.reduce((sum, r) => sum + r.answers.length, 0);
             const gradedAnswers = results.reduce((sum, r) => sum + r.answers.filter(a => a.is_graded).length, 0);
-            const avgScore = results.length > 0 ? 
+            const avgScore = results.length > 0 ?
                 results.reduce((sum, r) => {
                     const studentTotal = r.answers.reduce((s, a) => s + (a.student_score || 0), 0);
                     const studentMax = r.answers.reduce((s, a) => s + a.score, 0);
-                    return sum + (studentMax > 0 ? (studentTotal/studentMax) : 0);
+                    return sum + (studentMax > 0 ? (studentTotal / studentMax) : 0);
                 }, 0) / results.length * 100 : 0;
 
             container.innerHTML = `
@@ -242,13 +243,13 @@
             try {
                 const response = await fetch(`/teacher/exam_management/${examIdentifier}/results`);
                 const data = await response.json();
-                
+
                 const student = data.results.find(r => r.name === studentName);
                 if (!student) {
                     alert('找不到学生数据');
                     return;
                 }
-                
+
                 currentStudentData = student;
                 displayGradingModal(student);
             } catch (error) {
@@ -259,18 +260,18 @@
 
         function displayGradingModal(student) {
             document.getElementById('modal-title').textContent = `${student.name} - 答卷详情与评分`;
-            
+
             const content = document.getElementById('grading-content');
             content.innerHTML = '';
 
             student.answers.forEach((answer, index) => {
-                const answerDiv = document.createElement('div');
-                answerDiv.className = 'mb-6 p-4 border border-gray-200 rounded-lg';
-                
-                const isObjective = ['single_choice', 'multiple_choice', 'true_false'].includes(answer.question_type);
-                const isCorrect = answer.student_score === answer.score;
-                
-                answerDiv.innerHTML = `
+                        const answerDiv = document.createElement('div');
+                        answerDiv.className = 'mb-6 p-4 border border-gray-200 rounded-lg';
+                        console.log(answer);
+                        const isObjective = ['single_choice', 'multiple_choice', 'true_false'].includes(answer.question_type);
+                        const isCorrect = answer.student_score === answer.score;
+
+                        answerDiv.innerHTML = `
                     <div class="mb-4">
                         <h4 class="text-lg font-semibold text-gray-900 mb-2">
                             第${index + 1}题 (${answer.score}分)
@@ -418,61 +419,6 @@
             document.getElementById('grading-modal').classList.add('hidden');
             document.getElementById('grading-modal').classList.remove('flex');
             currentStudentData = null;
-        }
-    </script>
-</body>
-
-</html>
-                }
-
-                const tbody = document.getElementById('result-table-body');
-                data.results.forEach(row => {
-                    const tr = document.createElement('tr');
-                    tr.className = "hover:bg-gray-50 transition";
-                    tr.innerHTML = `
-            <td class="border px-6 py-3">${row.name}</td>
-            <td class="border px-6 py-3">${new Date(row.submit_time).toLocaleString()}</td>
-            <td class="border px-6 py-3">
-              <button onclick='showDetails(${JSON.stringify(row.answers)}, "${row.name}")'
-                class="text-blue-600 hover:text-blue-800 font-medium">查看详情</button>
-            </td>
-          `;
-                    tbody.appendChild(tr);
-                });
-            });
-
-        // 展示详情
-        function showDetails(answers, name) {
-            const container = document.getElementById('answer-detail');
-            container.innerHTML = ''; // 清空旧内容
-
-            // 显示考生姓名
-            container.textContent = `考生：${name}\n\n`;
-
-            // 遍历每道题，answers 是数组，每个元素有 question_id, content, answer, score
-            answers.forEach((item, index) => {
-                const answerText = Array.isArray(item.answer) ? item.answer.join(', ') : item.answer;
-
-                // 格式化纯文本内容
-                const textBlock = `(问题 ID：${item.question_id}) \n(${item.score} 分) ${index + 1}、${item.content}\n\n作答：${answerText}`;
-
-                // 创建一个带边框的盒子显示该题内容
-                const box = document.createElement('div');
-                box.className = 'border border-gray-300 rounded-md p-4 bg-gray-50';
-                box.textContent = textBlock;
-
-                container.appendChild(box);
-                container.appendChild(document.createElement('br')); // 题目间留空行
-            });
-
-            // 显示模态框
-            document.getElementById('detail-modal').classList.remove('hidden');
-            document.getElementById('detail-modal').classList.add('flex');
-        }
-
-        function closeModal() {
-            document.getElementById('detail-modal').classList.add('hidden');
-            document.getElementById('detail-modal').classList.remove('flex');
         }
     </script>
 </body>
