@@ -3,4 +3,5 @@ src/*.db
 src/default_admin_password
 src/openrouter_apikey
 test-data
+test-data/*
 uploads/*
