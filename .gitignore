@@ -2,3 +2,5 @@ src/__pycache__
 src/*.db
 src/default_admin_password
 src/openrouter_apikey
+test-data
+uploads/*
