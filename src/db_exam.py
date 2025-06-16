@@ -168,7 +168,7 @@ def auto_grade_objective_questions(exam_identifier: str):
             WHERE exam_identifier = ? AND name = ?
         ''', (exam_identifier, student))
         student_answers = dict(cursor.fetchall())
-          for question in questions:
+        for question in questions:
             if question['qtype'] in ['single_choice', 'multiple_choice', 'true_false', 'fill_blank']:
                 qid = question['id']
                 if qid in student_answers:
@@ -204,7 +204,6 @@ def auto_grade_objective_questions(exam_identifier: str):
                     ''', (score, datetime.now().isoformat(), exam_identifier, student, qid))
                     
                     auto_graded_count += 1
-    
     conn.commit()
     conn.close()
     return auto_graded_count

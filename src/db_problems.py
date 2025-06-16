@@ -1,3 +1,4 @@
+from datetime import datetime
 import sqlite3
 import os
 from flask import jsonify
@@ -70,6 +71,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS exams (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             exam_title TEXT NOT NULL,
+            paper_title TEXT NOT NULL,
             paper_id INTEGER NOT NULL,
             start_time TEXT NOT NULL,
             end_time TEXT NOT NULL,
@@ -228,11 +230,22 @@ def generate_exam_identifier():
     return str(uuid.uuid4())
 
 def create_exam(exam_title, paper_id, start_time, end_time, description):
+    # 先检查时间格式合法且 end_time 晚于 start_time
+    fmt = "%Y-%m-%dT%H:%M"
+    try:
+        dt_start = datetime.strptime(start_time, fmt)
+        dt_end = datetime.strptime(end_time, fmt)
+    except ValueError:
+        raise ValueError("开始时间或结束时间格式不正确，正确格式示例：2025/06/16 10:00")
+
+    if dt_end <= dt_start:
+        raise ValueError("考试结束时间必须晚于开始时间")
+
     identifier = generate_exam_identifier()
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # 首先获取试卷标题
+    # 获取试卷标题
     cursor.execute('SELECT title FROM papers WHERE id = ?', (paper_id,))
     paper_result = cursor.fetchone()
     if not paper_result:
