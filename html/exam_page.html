@@ -107,24 +107,29 @@
                     answers[qid] = val;
                 }
             }
+            try {
+                const res = await fetch(location.pathname + '/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: "{{ username }}",  // 确保传入了用户名
+                        answers
+                    })
+                });
 
-            const res = await fetch(location.pathname + '/submit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    name,
-                    answers
-                })
-            });
-
-            const result = await res.json();
-            if (result.success) {
-                alert('提交成功！谢谢参与');
-                window.location.reload();
-            } else {
-                alert('提交失败：' + (result.error || '未知错误'));
+                const result = await res.json();
+                if (result.success) {
+                    alert('提交成功！即将返回控制台');
+                    // 关键修改点：直接跳转到学生控制台
+                    window.location.href = "/dashboard";
+                } else {
+                    alert('提交失败：' + (result.error || '未知错误'));
+                }
+            } catch (error) {
+                console.error('提交出错:', error);
+                alert('提交过程中发生错误');
             }
         });
     </script>

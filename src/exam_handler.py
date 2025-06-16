@@ -45,6 +45,9 @@ def submit_exam(identifier):
         # 调用接口保存答案
         save_exam_answers(identifier, name, answers)
 
-        return jsonify(success=True)
+        return jsonify({
+            'success': True,
+            'redirect_url': url_for('dashboard.dashboard')
+        })
     except Exception as e:
         return jsonify(success=False, error=str(e)), 500
